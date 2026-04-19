@@ -216,6 +216,12 @@ function init_once() {
   document.getElementById('form-environment').addEventListener('change', async () => {
     form_change_event(false);
   });
+  const formPq = document.getElementById('form-pq');
+  if (formPq) {
+    formPq.addEventListener('change', async () => {
+      form_change_event(false);
+    });
+  }
   document.getElementById('form-server-1').addEventListener('change', async () => {
     form_change_event(true);
   });

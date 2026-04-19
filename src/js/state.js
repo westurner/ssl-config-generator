@@ -61,6 +61,16 @@ export default async function () {
   const supportsOcspStapling =
     configs[server].supportsOcspStapling
     && minver(configs[server].supportsOcspStapling, form['version'].value);
+
+  // Post-Quantum mode: 'none' (classical only), 'hybrid' (default), 'only' (PQ groups only).
+  // See src/static/citations.bib for the relevant specifications and library
+  // release notes (NIST FIPS 203 ML-KEM, draft-ietf-tls-hybrid-design,
+  // draft-kwiatkowski-tls-ecdhe-mlkem, OpenSSL 3.5 release notes, etc.).
+  let pqMode = form['pq'] ? form['pq'].value : 'hybrid';
+  if (pqMode !== 'none' && pqMode !== 'hybrid' && pqMode !== 'only') {
+    pqMode = 'hybrid';
+  }
+  const isPqGroup = (g) => /MLKEM/i.test(g);
   
   const url = new URL(document.location);
 
@@ -70,6 +80,9 @@ export default async function () {
   fragment += configs[server].supportsHsts !== false && form['hsts'].checked ? '&hsts' : '';
   fragment += supportsOcspStapling && form['ocsp'].checked ? '&ocsp' : '';
   fragment += `&guideline=${guideln}`;
+  if (pqMode !== 'hybrid') {
+    fragment += `&pq=${pqMode}`;
+  }
 
   // generate the version tags
   let version_tags = `${configs[server].name} ${form['version'].value}`;
@@ -88,6 +101,20 @@ export default async function () {
     }
   }
   version_tags += `, ${form['config'].value} config`;
+  if (pqMode === 'none') {
+    version_tags += ', PQ: off';
+  }
+  else if (pqMode === 'only') {
+    version_tags += ', PQ-only';
+  }
+  else {
+    version_tags += ', PQ: hybrid';
+  }
+  if (pqMode !== 'none'
+      && configs[server].usesOpenssl !== false
+      && !minver("3.5.0", form['openssl'].value)) {
+    version_tags += ' (WARNING: OpenSSL < 3.5.0 lacks built-in ML-KEM)';
+  }
 
   // html-escape version_tags (even though version_tags is also used
   // outside HTML contexts, HTML is not expected in version strings)
@@ -125,12 +152,27 @@ export default async function () {
     if (protocols.includes('TLSv1.1')) ciphers.unshift('@SECLEVEL=0');
   }
 
+  // Apply PQ mode to tls_curves (groups). The guideline lists hybrid + classical
+  // groups by default; we filter or augment based on the user's PQ mode choice.
+  let tlsCurves = (ssc.tls_curves || []).slice();
+  if (pqMode === 'none') {
+    tlsCurves = tlsCurves.filter(g => !isPqGroup(g));
+  }
+  else if (pqMode === 'only') {
+    tlsCurves = tlsCurves.filter(g => isPqGroup(g));
+    if (tlsCurves.length === 0) {
+      // Fall back to the most widely deployed hybrid PQ group (RFC-track).
+      tlsCurves = ['X25519MLKEM768'];
+    }
+  }
+
   const state = {
     form: {
       config: form['config'].value,
       hsts: form['hsts'].checked && configs[server].supportsHsts !== false,
       ocsp: form['ocsp'].checked && supportsOcspStapling,
       opensslVersion: form['openssl'].value,
+      pq: pqMode,
       server,
       serverName: configs[server].name,
       serverVersion: form['version'].value,
@@ -153,11 +195,12 @@ export default async function () {
       oldestClients: ssc.oldest_clients,
       origin: url.origin,
       protocols: protocols,
+      pqMode: pqMode,
       serverPreferredOrder: ssc.server_preferred_order,
       showSupports: configs[server].showSupports !== false,
       supportsHsts: configs[server].supportsHsts !== false,
       supportsOcspStapling: supportsOcspStapling,
-      tlsCurves: ssc.tls_curves,
+      tlsCurves: tlsCurves,
       // XXX: If DHE ciphers removed from guidelines, then usesDhe, dhCommand,
       //      dhParamSize, and helpers/*.js code which uses them can be removed
       usesDhe: ciphers.join(":").includes(":DHE") || ciphers.join(":").includes("_DHE_"), 

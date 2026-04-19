@@ -119,6 +119,16 @@ module.exports = {
     eolBefore: '3.0.0',
     tls13: '1.1.1',
   },
+  opensslcnf: {
+    latestVersion: '3.6.1',
+    eolBefore: '3.0.0',
+    name: 'OpenSSL config (openssl.cnf)',
+    showSupports: false,
+    supportsHsts: false,
+    tls13: '1.1.1',
+    // openssl.cnf is read by every OpenSSL-based application, including
+    // Python's `ssl` module (which honours system openssl.cnf), curl, etc.
+  },
   openlitespeed: {
     latestVersion: '1.8.5',
     eolBefore: '1.4.35',

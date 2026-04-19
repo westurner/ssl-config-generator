@@ -6,6 +6,11 @@ export default (form, output) => {
  // map output.tlsCurves strings into Traefik 'curvePreferences' strings
  let groups_guideln = ['X25519MLKEM768','SecP256r1MLKEM768','SecP384r1MLKEM1024','X25519','prime256v1','secp384r1'];
  let groups_traefik = ['X25519MLKEM768','',                 '',                  'X25519','CurveP256', 'CurveP384'];
+ if (form.pq === 'only') {
+    tlsopts +=
+      '      # PQ-only: Traefik currently only exposes the X25519MLKEM768\n'+
+      '      # hybrid group via curvePreferences.\n';
+ }
     tlsopts +=
       '      curvePreferences = [';
  output.tlsCurves.forEach(function(group) {

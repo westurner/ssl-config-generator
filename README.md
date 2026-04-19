@@ -105,7 +105,9 @@ Highlighted items from src/js/state.js for use in templates.  See src/js/state.j
 - `output.supportsHsts` - supports HTTP Strict Transport Security (HSTS) (boolean true/false)
 - `output.supportsOcspStapling` - server version supporting OCSP Stapling in config
 - `output.tls13` - server version supporting TLSv1.3
-- `output.tlsCurves` - groups/curves list
+- `output.tlsCurves` - groups/curves list (filtered by the selected PQ mode)
+- `form.pq` - Post-Quantum mode (`"none"` = classical only, `"hybrid"` = hybrid PQ+classical, `"only"` = PQ groups only)
+- `output.pqMode` - same value as `form.pq`, exposed for use in templates
 
 ### Requested but not yet added new software support
 
@@ -136,6 +138,20 @@ However, this step is not necessary for production deployment.
 Automation publishes the production site via GitHub Pages, so once your PR merges the changes deploy within a minute or two.
 GitHub Pages are published upon commit to the master branch
 via .github/workflows/deploy-to-production.yml
+
+## Post-Quantum (PQ) cryptography
+
+The generator includes a **Post-Quantum Mode** selector with three options:
+
+* **Non-PQ** — classical curves only (e.g. `X25519`, `prime256v1`, `secp384r1`); maximum interoperability with older clients.
+* **Hybrid** *(default)* — hybrid PQ + classical groups (e.g. `X25519MLKEM768`) listed alongside classical curves, matching the Mozilla guideline ≥ 5.8.
+* **PQ Only** — PQ / hybrid PQ groups only; may break clients that don't yet implement ML-KEM.
+
+PQ key exchange requires a recent TLS library (e.g. OpenSSL ≥ 3.5, BoringSSL, Go ≥ 1.24). When `Hybrid` or `PQ Only` is selected with an OpenSSL version older than 3.5.0, the generator emits a warning in the configuration header.
+
+A new **OpenSSL config (`openssl.cnf`)** software entry produces an `openssl.cnf` snippet that applies system-wide to OpenSSL-based programs, including Python's `ssl` module.
+
+The relevant specifications and library release notes are collected in BibTeX at [`src/static/citations.bib`](src/static/citations.bib) (NIST FIPS 203 ML-KEM, `draft-kwiatkowski-tls-ecdhe-mlkem`, OpenSSL 3.5 release notes, Apache `mod_ssl`, nginx, Caddy, Traefik, Go `crypto/tls`, Python `ssl`, Mozilla Server-Side TLS, Cloudflare PQ posts, and the originating issue [#342](https://github.com/mozilla/ssl-config-generator/issues/342)).
 
 ## History
 
