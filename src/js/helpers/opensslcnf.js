@@ -37,6 +37,8 @@ export default (form, output) => {
       '#                        required by intermediate for legacy clients;\n'+
       '#                        select the "modern" profile to require 1.3)\n'+
       '#   - "old"           -> MinProtocol = TLSv1   (last-resort interop)\n'+
+      '# When PQ-only mode is selected, MinProtocol is always TLSv1.3:\n'+
+      '# ML-KEM key-exchange groups are only defined for TLS 1.3.\n'+
       '#\n'+
       '# Locate your active openssl.cnf with:\n'+
       '#     openssl version -d\n'+

@@ -57,6 +57,17 @@ test('opensslcnf: hybrid mode includes the downgrade-risk comment', () => {
   assert.match(out, /downgrade/i);
 });
 
+test('opensslcnf: PQ-only mode forces MinProtocol = TLSv1.3 even for intermediate profile', () => {
+  // state.js filters protocols to ['TLSv1.3'] when pqMode === 'only';
+  // verify that this results in MinProtocol = TLSv1.3 (not TLSv1.2).
+  const out = opensslcnf(
+    baseForm({ pq: 'only' }),
+    Object.assign({}, BASE_OUTPUT, { protocols: ['TLSv1.3'], tlsCurves: ['X25519MLKEM768'] }),
+  );
+  assert.match(out, /^MinProtocol = TLSv1\.3$/m);
+  assert.doesNotMatch(out, /^MinProtocol = TLSv1\.2$/m);
+});
+
 test('opensslcnf: PQ-only mode includes the "classical curves omitted" comment', () => {
   const out = opensslcnf(
     baseForm({ pq: 'only' }),
@@ -72,7 +83,7 @@ test('opensslcnf: Non-PQ mode does not emit a hybrid/PQ-only comment block', () 
     Object.assign({}, BASE_OUTPUT, { tlsCurves: ['X25519', 'prime256v1', 'secp384r1'] }),
   );
   assert.doesNotMatch(out, /Hybrid PQ mode/);
-  assert.doesNotMatch(out, /PQ-only mode/);
+  assert.doesNotMatch(out, /PQ-only mode: classical curves are intentionally omitted/);
   assert.match(out, /^Groups = X25519:prime256v1:secp384r1$/m);
 });
 
