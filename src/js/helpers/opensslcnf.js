@@ -27,7 +27,18 @@ export default (form, output) => {
       '# This is a snippet for OpenSSL\'s configuration file (openssl.cnf).\n'+
       '# It applies system-wide to programs that use OpenSSL via the\n'+
       '# default config loader, including Python\'s ssl module, curl,\n'+
-      '# libpq, and many others.\n'+
+      '# libpq, Rust apps that link the `openssl` crate, and many others.\n'+
+      '# (Pure-Rust apps that use rustls do NOT honour openssl.cnf; see\n'+
+      '# the "Rust (rustls)" target instead.)\n'+
+      '#\n'+
+      '# MinProtocol / MaxProtocol below mirror the chosen Mozilla profile:\n'+
+      '#   - "modern"        -> MinProtocol = TLSv1.3\n'+
+      '#   - "intermediate"  -> MinProtocol = TLSv1.2 (TLS 1.2 is still\n'+
+      '#                        required by intermediate for legacy clients;\n'+
+      '#                        select the "modern" profile to require 1.3)\n'+
+      '#   - "old"           -> MinProtocol = TLSv1   (last-resort interop)\n'+
+      '# When PQ-only mode is selected, MinProtocol is always TLSv1.3:\n'+
+      '# ML-KEM key-exchange groups are only defined for TLS 1.3.\n'+
       '#\n'+
       '# Locate your active openssl.cnf with:\n'+
       '#     openssl version -d\n'+
@@ -85,7 +96,10 @@ export default (form, output) => {
       conf +=
       '# Hybrid PQ mode: ML-KEM hybrid groups are listed first, with\n'+
       '# classical curves retained for interoperability with peers that\n'+
-      '# do not yet implement post-quantum key exchange.\n';
+      '# do not yet implement post-quantum key exchange. Note that a MITM\n'+
+      '# capable of stripping the hybrid group from ClientHello can still\n'+
+      '# downgrade the connection to a classical group; PQ-only mode\n'+
+      '# eliminates that risk at the cost of interoperability.\n';
     }
     conf +=
       'Groups = '+groupsLine+'\n';
