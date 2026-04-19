@@ -102,10 +102,10 @@ export default async function () {
   }
   version_tags += `, ${form['config'].value} config`;
   if (pqMode === 'none') {
-    version_tags += ', PQ: off';
+    version_tags += ', PQ: none';
   }
   else if (pqMode === 'only') {
-    version_tags += ', PQ-only';
+    version_tags += ', PQ: only';
   }
   else {
     version_tags += ', PQ: hybrid';
