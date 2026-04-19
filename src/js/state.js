@@ -152,6 +152,14 @@ export default async function () {
     if (protocols.includes('TLSv1.1')) ciphers.unshift('@SECLEVEL=0');
   }
 
+  // PQ-only mode requires TLS 1.3: ML-KEM key-exchange groups (X25519MLKEM768,
+  // SecP256r1MLKEM768, SecP384r1MLKEM1024) are defined exclusively for TLS 1.3
+  // via the key_share extension. TLS 1.2 does not support these groups, so
+  // allowing a MinProtocol of TLSv1.2 with PQ-only would be misleading.
+  if (pqMode === 'only') {
+    protocols = ['TLSv1.3'];
+  }
+
   // Apply PQ mode to tls_curves (groups). The guideline lists hybrid + classical
   // groups by default; we filter or augment based on the user's PQ mode choice.
   let tlsCurves = (ssc.tls_curves || []).slice();
