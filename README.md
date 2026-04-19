@@ -133,6 +133,62 @@ Automation publishes the production site via GitHub Pages, so once your PR merge
 GitHub Pages are published upon commit to the master branch
 via .github/workflows/deploy-to-production.yml
 
+## Tests
+
+Unit tests for individual server-config templates live under [`test/`](test/) and
+run with Node's built-in test runner:
+
+```bash
+$ npm test
+```
+
+Tests are written as standard `node:test` files; `@babel/register` is loaded so
+the test runner can `import` the ES-module helpers in `src/js/helpers/`. New
+templates should ship with at least one test that asserts the shape of the
+generated config (key directives, version-gated comments, PQ-mode behaviour).
+
+## Post-Quantum (PQ) cryptography
+
+The generator includes a **Post-Quantum Mode** selector with three options:
+
+* **Non-PQ** — classical curves only (e.g. `X25519`, `prime256v1`, `secp384r1`); maximum interoperability with older clients.
+* **Hybrid** *(default)* — hybrid PQ + classical groups (e.g. `X25519MLKEM768`) listed alongside classical curves, matching the Mozilla guideline ≥ 5.8.
+* **PQ Only** — PQ / hybrid PQ groups only; may break clients that don't yet implement ML-KEM.
+
+PQ key exchange requires a recent TLS library (e.g. OpenSSL ≥ 3.5, BoringSSL, Go ≥ 1.24, GnuTLS ≥ 3.8.10, rustls ≥ 0.23.18). When `Hybrid` or `PQ Only` is selected with an OpenSSL version older than 3.5.0, the generator emits a warning in the configuration header.
+
+### `MinProtocol` in the generated `openssl.cnf`
+
+The new **OpenSSL config (`openssl.cnf`)** software entry produces an `openssl.cnf` snippet that applies system-wide to OpenSSL-based programs, including Python's `ssl` module, curl, libpq, and Rust apps that link the `openssl` crate. (Pure-Rust apps that use `rustls` do **not** honour `openssl.cnf`; use the **Rust (rustls)** target instead.)
+
+The snippet's `MinProtocol` directive mirrors the chosen Mozilla profile rather than always being `TLSv1.3`:
+
+| Profile         | `MinProtocol` |
+| --------------- | ------------- |
+| `modern`        | `TLSv1.3`     |
+| `intermediate`  | `TLSv1.2`     |
+| `old`           | `TLSv1`       |
+
+Pick **modern** in the form if you want `MinProtocol = TLSv1.3`. The `intermediate` profile intentionally keeps TLS 1.2 enabled for legacy clients that have not yet migrated to TLS 1.3.
+
+### Hybrid-mode downgrade risk
+
+In `Hybrid` mode the server still negotiates classical groups when a peer advertises only classical groups. A network attacker who can strip the hybrid groups from `ClientHello` can therefore force a classical handshake. If you need to refuse such fallbacks, choose `PQ Only` (and accept the resulting interop loss for clients that don't yet support ML-KEM).
+
+### Browser / library PQ support
+
+Authoritative trackers (mirrored in [`src/static/citations.bib`](src/static/citations.bib)):
+
+* Cloudflare — [PQC support across browsers and libraries](https://developers.cloudflare.com/ssl/post-quantum-cryptography/pqc-support/)
+* Chrome Status — [ML-KEM key agreement](https://chromestatus.com/feature/5076669125558272) (shipped by default in Chrome 131)
+* Firefox — [Bug 1933731 — implement X25519MLKEM768](https://bugzilla.mozilla.org/show_bug.cgi?id=1933731)
+
+### Merkle Tree Certificates
+
+[Merkle Tree Certificates](https://datatracker.ietf.org/doc/draft-davidben-tls-merkle-tree-certs/) are an emerging IETF proposal to amortise the size of PQ certificate chains. They are not yet deployable end-to-end, so this generator does **not** expose a Merkle-certs mode selector; the PQ mode setting only affects the negotiated key-exchange (KEM) groups, not certificate signatures. See Cloudflare's [Another look at post-quantum signatures](https://blog.cloudflare.com/another-look-at-pq-signatures/) for background.
+
+The relevant specifications and library release notes are collected in BibTeX at [`src/static/citations.bib`](src/static/citations.bib) (NIST FIPS 203 ML-KEM, `draft-kwiatkowski-tls-ecdhe-mlkem`, OpenSSL 3.5 release notes, Apache `mod_ssl`, nginx, Caddy, Traefik, Go `crypto/tls`, GnuTLS, rustls, Python `ssl`, Mozilla Server-Side TLS, Cloudflare PQ posts, Chrome Status / Firefox Bugzilla browser tracking, the Merkle-tree-certs draft, and the originating issue [#342](https://github.com/mozilla/ssl-config-generator/issues/342)).
+
 ## History
 
 The SSL Config Generator was originally part of [`mozilla/server-side-tls@v5.0`](https://github.com/mozilla/server-side-tls/tree/12fda41) ([last-revision-before-move](https://github.com/mozilla/server-side-tls/tree/last-revision-before-move))

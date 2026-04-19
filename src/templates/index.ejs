@@ -124,8 +124,10 @@
           <h5>Post-Quantum (PQ) Mode</h5>
           <small class="form-text text-muted">
             Selects key-exchange (KEM) groups. Hybrid PQ requires recent libraries
-            (e.g. OpenSSL ≥ 3.5, BoringSSL, Go ≥ 1.24); see the
+            (e.g. OpenSSL ≥ 3.5, BoringSSL, Go ≥ 1.24, GnuTLS ≥ 3.8.10,
+            rustls ≥ 0.23.18); see the
             <a href="https://github.com/mozilla/ssl-config-generator/blob/master/src/static/citations.bib">citations</a>.
+            See also: <a href="https://developers.cloudflare.com/ssl/post-quantum-cryptography/pqc-support/">Cloudflare's browser/library PQ support tracker</a>.
           </small>
           <div class="form-check">
             <input class="form-check-input" type="radio" name="pq" id="pq-none" value="none">
@@ -138,7 +140,7 @@
             <input class="form-check-input" type="radio" name="pq" id="pq-hybrid" value="hybrid" checked>
             <label class="form-check-label" for="pq-hybrid">
               Hybrid
-              <small class="form-text text-muted">Hybrid PQ + classical (e.g. X25519MLKEM768) alongside classical groups; recommended default.</small>
+              <small class="form-text text-muted">Hybrid PQ + classical (e.g. X25519MLKEM768) alongside classical groups; recommended default. <strong>Downgrade risk:</strong> a MITM that strips hybrid groups from ClientHello can still force a classical handshake; choose PQ Only to refuse such fallbacks.</small>
             </label>
           </div>
           <div class="form-check">
@@ -148,6 +150,21 @@
               <small class="form-text text-muted">PQ / hybrid PQ groups only. May break clients that don't yet support ML-KEM.</small>
             </label>
           </div>
+          <small class="form-text text-muted mt-2">
+            <strong>OpenSSL "MinProtocol":</strong> the openssl.cnf snippet sets
+            <code>MinProtocol</code> from the chosen Mozilla profile
+            (<em>modern</em> &rarr; TLSv1.3, <em>intermediate</em> &rarr; TLSv1.2,
+            <em>old</em> &rarr; TLSv1). Pick <em>modern</em> to require TLS&nbsp;1.3.
+          </small>
+          <small class="form-text text-muted mt-2">
+            <strong>Merkle Tree Certificates</strong> (see
+            <a href="https://datatracker.ietf.org/doc/draft-davidben-tls-merkle-tree-certs/">draft-davidben-tls-merkle-tree-certs</a>
+            and <a href="https://blog.cloudflare.com/another-look-at-pq-signatures/">Cloudflare's analysis</a>)
+            are an emerging proposal to amortise the size of PQ certificate chains.
+            They are not yet deployable end-to-end, so this generator does not
+            expose a Merkle-certs mode selector; the chosen PQ mode only affects
+            the negotiated key-exchange (KEM) groups, not certificate signatures.
+          </small>
         </div>
       </div>
     </form>

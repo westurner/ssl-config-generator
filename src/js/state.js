@@ -90,8 +90,10 @@ export default async function () {
   version_tags += `, ${form['config'].value} config`;
   if (pqMode === 'none') {
     version_tags += ', PQ: none';
+    version_tags += ', PQ: none';
   }
   else if (pqMode === 'only') {
+    version_tags += ', PQ: only';
     version_tags += ', PQ: only';
   }
   else {
@@ -142,6 +144,28 @@ export default async function () {
   if (configs[server].usesOpenssl !== false && minver('3.0.0', form['openssl'].value)) {
     // set SECLEVEL=0 via cipher string to support TLSv1-1.1 "old" with OpenSSL 3.x
     if (protocols.includes('TLSv1.1')) ciphers.unshift('@SECLEVEL=0');
+  }
+
+  // PQ-only mode requires TLS 1.3: ML-KEM key-exchange groups (X25519MLKEM768,
+  // SecP256r1MLKEM768, SecP384r1MLKEM1024) are defined exclusively for TLS 1.3
+  // via the key_share extension. TLS 1.2 does not support these groups, so
+  // allowing a MinProtocol of TLSv1.2 with PQ-only would be misleading.
+  if (pqMode === 'only') {
+    protocols = ['TLSv1.3'];
+  }
+
+  // Apply PQ mode to tls_curves (groups). The guideline lists hybrid + classical
+  // groups by default; we filter or augment based on the user's PQ mode choice.
+  let tlsCurves = (ssc.tls_curves || []).slice();
+  if (pqMode === 'none') {
+    tlsCurves = tlsCurves.filter(g => !isPqGroup(g));
+  }
+  else if (pqMode === 'only') {
+    tlsCurves = tlsCurves.filter(g => isPqGroup(g));
+    if (tlsCurves.length === 0) {
+      // Fall back to the most widely deployed hybrid PQ group (RFC-track).
+      tlsCurves = ['X25519MLKEM768'];
+    }
   }
 
   const state = {

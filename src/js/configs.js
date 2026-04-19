@@ -70,6 +70,16 @@ module.exports = {
     usesOpenssl: false,
     supportedCiphers: [ 'TLS_RSA_WITH_RC4_128_SHA', 'TLS_RSA_WITH_3DES_EDE_CBC_SHA', 'TLS_RSA_WITH_AES_128_CBC_SHA', 'TLS_RSA_WITH_AES_256_CBC_SHA', 'TLS_RSA_WITH_AES_128_CBC_SHA256', 'TLS_RSA_WITH_AES_128_GCM_SHA256', 'TLS_RSA_WITH_AES_256_GCM_SHA384', 'TLS_ECDHE_ECDSA_WITH_RC4_128_SHA', 'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA', 'TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA', 'TLS_ECDHE_RSA_WITH_RC4_128_SHA', 'TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA', 'TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA', 'TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA', 'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256', 'TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256', 'TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256', 'TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256', 'TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384', 'TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384', 'TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256', 'TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256' ],
   },
+  gnutls: {
+    latestVersion: '3.8.10',
+    eolBefore: '3.8.0',
+    name: 'GnuTLS',
+    showSupports: false,
+    supportsHsts: false,
+    tls13: '3.6.4',
+    usesOpenssl: false,
+    // GnuTLS 3.8.10 added the X25519-MLKEM768 hybrid PQ group.
+  },
   haproxy: {
     latestVersion: '3.0',
     eolBefore: '2.2',
@@ -164,6 +174,17 @@ module.exports = {
     showSupports: false,
     supportsHsts: false,
     tls13: '6.0',
+  },
+  rust: {
+    cipherFormat: 'iana',
+    latestVersion: '0.23.18',
+    eolBefore: '0.23.0',
+    name: 'Rust (rustls)',
+    showSupports: false,
+    supportsHsts: false,
+    tls13: '0.20.0',
+    usesOpenssl: false,
+    // rustls 0.23.18 (aws-lc-rs provider) negotiates X25519MLKEM768.
   },
   squid: {
     latestVersion: '6.12',
