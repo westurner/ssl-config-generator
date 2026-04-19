@@ -88,6 +88,20 @@ export default async function () {
     }
   }
   version_tags += `, ${form['config'].value} config`;
+  if (pqMode === 'none') {
+    version_tags += ', PQ: none';
+  }
+  else if (pqMode === 'only') {
+    version_tags += ', PQ: only';
+  }
+  else {
+    version_tags += ', PQ: hybrid';
+  }
+  if (pqMode !== 'none'
+      && configs[server].usesOpenssl !== false
+      && !minver("3.5.0", form['openssl'].value)) {
+    version_tags += ' (WARNING: OpenSSL < 3.5.0 lacks built-in ML-KEM)';
+  }
 
   // html-escape version_tags (even though version_tags is also used
   // outside HTML contexts, HTML is not expected in version strings)
