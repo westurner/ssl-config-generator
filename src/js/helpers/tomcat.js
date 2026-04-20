@@ -16,7 +16,14 @@ export default (form, output) => {
       '  HttpHeaderSecurityFilter (Tomcat 8.5+). Add the snippet below to\n'+
       '  WEB-INF/web.xml of your application (or to $CATALINA_BASE/conf/web.xml\n'+
       '  to apply it to every deployed app). See:\n'+
-      '    https://tomcat.apache.org/tomcat-'+(form.serverVersion || '11').split('.')[0]+'.0-doc/config/filter.html#HTTP_Header_Security_Filter\n'+
+      // Docs link: pin to the major-version doc tree of the running
+      // server (Tomcat publishes /tomcat-N.0-doc/ for major version N).
+      // Fall back to the most-recent stable major (11) if form.serverVersion
+      // is missing or doesn't start with a digit, so the URL is always
+      // syntactically valid.
+      '    https://tomcat.apache.org/tomcat-'+
+      (/^([0-9]+)\./.exec(form.serverVersion || '')?.[1] || '11')+
+      '.0-doc/config/filter.html#HTTP_Header_Security_Filter\n'+
       '\n'+
       '  <filter>\n'+
       '    <filter-name>httpHeaderSecurity</filter-name>\n'+
