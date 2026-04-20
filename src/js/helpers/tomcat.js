@@ -10,6 +10,48 @@ export default (form, output) => {
       '<Connector\n'+
       '    port="80"\n'+
       '    redirectPort="443" />\n'+
+      '\n'+
+      '<!--\n'+
+      '  HTTP Strict Transport Security (HSTS): emitted by Tomcat\'s built-in\n'+
+      '  HttpHeaderSecurityFilter (REQUIRES Tomcat 8.5+; the filter class\n'+
+      '  org.apache.catalina.filters.HttpHeaderSecurityFilter was added in 8.5.0).\n'+
+      '  Add the <filter>/<filter-mapping> below to WEB-INF/web.xml of your\n'+
+      '  application (or to $CATALINA_BASE/conf/web.xml to apply to every\n'+
+      '  deployed app). See:\n'+
+      // Docs link: pin to the major-version doc tree of the running
+      // server (Tomcat publishes /tomcat-N.0-doc/ for major version N).
+      // Fall back to the most-recent stable major (11) if form.serverVersion
+      // is missing or doesn't start with a digit, so the URL is always
+      // syntactically valid.
+      '    https://tomcat.apache.org/tomcat-'+
+      (/^([0-9]+)\./.exec(form.serverVersion || '')?.[1] || '11')+
+      '.0-doc/config/filter.html#HTTP_Header_Security_Filter\n'+
+      '\n'+
+      '  Equivalent rendered response header:\n'+
+      '    Strict-Transport-Security: max-age='+output.hstsMaxAge+'; includeSubDomains\n'+
+      '-->\n'+
+      '<filter>\n'+
+      '    <filter-name>httpHeaderSecurity</filter-name>\n'+
+      '    <filter-class>org.apache.catalina.filters.HttpHeaderSecurityFilter</filter-class>\n'+
+      '    <async-supported>true</async-supported>\n'+
+      '    <init-param>\n'+
+      '        <param-name>hstsEnabled</param-name>\n'+
+      '        <param-value>true</param-value>\n'+
+      '    </init-param>\n'+
+      '    <init-param>\n'+
+      '        <param-name>hstsMaxAgeSeconds</param-name>\n'+
+      '        <param-value>'+output.hstsMaxAge+'</param-value>\n'+
+      '    </init-param>\n'+
+      '    <init-param>\n'+
+      '        <param-name>hstsIncludeSubDomains</param-name>\n'+
+      '        <param-value>true</param-value>\n'+
+      '    </init-param>\n'+
+      '</filter>\n'+
+      '<filter-mapping>\n'+
+      '    <filter-name>httpHeaderSecurity</filter-name>\n'+
+      '    <url-pattern>/*</url-pattern>\n'+
+      '    <dispatcher>REQUEST</dispatcher>\n'+
+      '</filter-mapping>\n'+
       '\n';
  }
 

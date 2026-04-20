@@ -41,7 +41,53 @@ test('gnutls: does not warn when PQ mode is "none"', () => {
   assert.doesNotMatch(out, /\+GROUP-X25519-MLKEM768/);
 });
 
-test('gnutls: falls back to GROUP-ALL if no curves map to GnuTLS tokens', () => {
+test('gnutls: omits %SERVER_PRECEDENCE when serverPreferredOrder is false', () => {
+  // Covers the else branch of `if (output.serverPreferredOrder)`.
+  const out = gnutls(
+    baseForm({ pq: 'none' }),
+    Object.assign({}, BASE_OUTPUT, { serverPreferredOrder: false, tlsCurves: ['X25519', 'prime256v1'] }),
+  );
+  assert.doesNotMatch(out, /%SERVER_PRECEDENCE/);
+});
+
+test('gnutls: emits the +AES-128-CBC / +3DES-CBC legacy tail for the old profile', () => {
+  // Covers the `if (form.config === 'old')` branch of the cipher-token block.
+  const out = gnutls(baseForm({ config: 'old', pq: 'none' }), Object.assign({}, BASE_OUTPUT, {
+    protocols: ['TLSv1', 'TLSv1.1', 'TLSv1.2', 'TLSv1.3'],
+    tlsCurves: ['X25519', 'prime256v1', 'secp384r1'],
+  }));
+  assert.match(out, /\+AES-128-CBC/);
+  assert.match(out, /\+3DES-CBC/);
+});
+
+test('gnutls: warns and falls back to the Mozilla classical-group baseline when no curves map (NOT GROUP-ALL — that would silently widen the policy)', () => {
   const out = gnutls(baseForm(), Object.assign({}, BASE_OUTPUT, { tlsCurves: ['someUnknownGroup'] }));
-  assert.match(out, /\+GROUP-ALL/);
+  // The unsafe `+GROUP-ALL` must NOT appear: it would enable every group
+  // GnuTLS knows, including weaker DH groups deliberately excluded by the
+  // Mozilla profile.
+  assert.doesNotMatch(out, /\+GROUP-ALL\b/);
+  // A WARNING comment must name the unrecognized group(s) so the operator
+  // sees the silent narrowing/widening decision before deploying.
+  assert.match(out, /# WARNING: none of the requested TLS groups \(someUnknownGroup\)/);
+  // The fallback uses the Mozilla classical-group baseline, not whatever
+  // happens to be compiled into the local libgnutls.
+  assert.match(out, /\+GROUP-X25519\b/);
+  assert.match(out, /\+GROUP-SECP256R1\b/);
+  assert.match(out, /\+GROUP-SECP384R1\b/);
+});
+
+test('gnutls: warns about partially unmapped curves and silently drops only the unrecognized ones', () => {
+  // Mix mappable + unmappable groups — the helper should keep the mappable
+  // ones, drop the unmappable ones, AND emit a WARNING naming the dropped
+  // entries so the operator notices the silent narrowing.
+  const out = gnutls(baseForm(), Object.assign({}, BASE_OUTPUT, {
+    tlsCurves: ['X25519', 'someBogusGroup', 'anotherBogusGroup'],
+  }));
+  assert.match(out, /\+GROUP-X25519\b/);
+  assert.doesNotMatch(out, /\+GROUP-ALL\b/);
+  // The unrecognized group names must appear ONLY inside the WARNING comment
+  // block, never as a `+someBogusGroup` token in the priority string.
+  assert.doesNotMatch(out, /\+someBogusGroup\b/);
+  assert.doesNotMatch(out, /\+anotherBogusGroup\b/);
+  assert.match(out, /# WARNING: the following requested TLS groups[\s\S]+someBogusGroup, anotherBogusGroup/);
 });
