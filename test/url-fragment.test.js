@@ -36,9 +36,11 @@ test('hashValueToBool: short flag-only form (value === "") is truthy', () => {
   assert.equal(hashValueToBool(''), true);
 });
 
-test('hashValueToBool: undefined / null treated as flag present (truthy)', () => {
-  assert.equal(hashValueToBool(undefined), true);
-  assert.equal(hashValueToBool(null), true);
+test('hashValueToBool: undefined / null yield null (key absent — no decision)', () => {
+  // Distinct from `''` (flag-only present → true). `null` lets callers
+  // tell "key not in the fragment" apart from "key present without a value".
+  assert.equal(hashValueToBool(undefined), null);
+  assert.equal(hashValueToBool(null), null);
 });
 
 test('hashValueToBool: explicit "true" / "false" parse as expected', () => {
