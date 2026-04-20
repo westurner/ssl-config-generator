@@ -142,7 +142,23 @@
   author       = {{Python Software Foundation}},
   year         = {2025},
   howpublished = {\url{https://docs.python.org/3/library/ssl.html}},
-  note         = {Python's ssl module is a thin wrapper over libssl and inherits group / cipher defaults from the system openssl.cnf, which is why this tool can configure Python's TLS behaviour by emitting an openssl.cnf snippet.},
+  note         = {Python's ssl module is a thin wrapper over libssl and inherits group / cipher defaults from the system openssl.cnf, which is why this tool can configure Python's TLS behaviour by emitting an openssl.cnf snippet. The dedicated "Python (ssl module)" target additionally emits an ssl.SSLContext with minimum_version / maximum_version, set_ciphers(), and set_groups() (Python 3.13+, with a set_ecdh_curve() fallback for older interpreters).},
+}
+
+@misc{python-ssl-set-groups,
+  title        = {{Python 3.13 --- ssl.SSLContext.set\_groups() / get\_groups()}},
+  author       = {{Python Software Foundation}},
+  year         = {2024},
+  howpublished = {\url{https://docs.python.org/3/library/ssl.html#ssl.SSLContext.set_groups}},
+  note         = {Python 3.13 added SSLContext.set_groups() / get_groups(), exposing the OpenSSL Groups directive (including ML-KEM hybrids such as X25519MLKEM768) to Python applications. Earlier 3.x can pin a single curve via SSLContext.set_ecdh_curve() or rely on the system openssl.cnf [system_default_sect] Groups setting.},
+}
+
+@misc{python-pep-644,
+  title        = {{PEP 644 --- Require OpenSSL 1.1.1 or newer}},
+  author       = {Stinner, Victor and Heimes, Christian},
+  year         = {2020},
+  howpublished = {\url{https://peps.python.org/pep-0644/}},
+  note         = {Establishes the OpenSSL version floor for CPython; the Python ssl module's PQ behaviour is bounded by the underlying OpenSSL (e.g. ML-KEM hybrids require OpenSSL 3.5+).},
 }
 
 @misc{cloudflare-pq-2025,

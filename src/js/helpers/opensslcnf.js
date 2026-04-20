@@ -29,7 +29,9 @@ export default (form, output) => {
       '# default config loader, including Python\'s ssl module, curl,\n'+
       '# libpq, Rust apps that link the `openssl` crate, and many others.\n'+
       '# (Pure-Rust apps that use rustls do NOT honour openssl.cnf; see\n'+
-      '# the "Rust (rustls)" target instead.)\n'+
+      '# the "Rust (rustls)" target instead. For Python applications that\n'+
+      '# prefer to configure TLS in code, see the "Python (ssl module)"\n'+
+      '# target which emits an ssl.SSLContext directly.)\n'+
       '#\n'+
       '# MinProtocol / MaxProtocol below mirror the chosen Mozilla profile:\n'+
       '#   - "modern"        -> MinProtocol = TLSv1.3\n'+

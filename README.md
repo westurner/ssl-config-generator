@@ -167,6 +167,8 @@ PQ key exchange requires a recent TLS library (e.g. OpenSSL ≥ 3.5, BoringSSL, 
 
 The new **OpenSSL config (`openssl.cnf`)** software entry produces an `openssl.cnf` snippet that applies system-wide to OpenSSL-based programs, including Python's `ssl` module, curl, libpq, and Rust apps that link the `openssl` crate. (Pure-Rust apps that use `rustls` do **not** honour `openssl.cnf`; use the **Rust (rustls)** target instead.)
 
+For Python applications that prefer to configure TLS in code (rather than rely on the system-wide `openssl.cnf`), the generator also exposes a dedicated **Python (`ssl` module)** target. It emits an `ssl.SSLContext` with `minimum_version` / `maximum_version`, `set_ciphers()`, and `set_groups()` (Python 3.13+, with a `set_ecdh_curve()` fallback for older interpreters). TLSv1.3 ciphersuites are not exposed by the Python API and continue to be inherited from `openssl.cnf`.
+
 The snippet's `MinProtocol` directive mirrors the chosen Mozilla profile rather than always being `TLSv1.3`:
 
 | Profile         | `MinProtocol` |
