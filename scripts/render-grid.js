@@ -11,6 +11,12 @@
 //   --out <dir>          output directory (default: fixtures/grid)
 //   --server <name>      restrict to one helper (repeatable)
 //   --guideline <ver>    restrict to one guideline (repeatable)
+//   --config <profile>   restrict to one Mozilla profile: modern|intermediate|old
+//   --hsts true|false    restrict to one HSTS setting
+//   --ocsp true|false    restrict to one OCSP-stapling setting
+//   --pq <mode>          restrict to one PQ mode: none|hybrid|only
+//   --version <ver>      override server version for all rendered cells
+//   --openssl <ver>      override OpenSSL version for all rendered cells
 //   --only-changed       in-memory render only; write files whose content
 //                        changed (or are new). Useful for partial regen.
 //   --dry-run            print what WOULD be written; touch nothing.
@@ -49,6 +55,12 @@ function parseArgs(argv) {
     outDir: 'fixtures/grid',
     servers: null,         // null = all
     guidelines: null,      // null = all
+    config: null,          // null = all profiles
+    hsts: null,            // null = all (true/false)
+    ocsp: null,            // null = all (true/false)
+    pq: null,              // null = all modes
+    version: null,         // null = use per-helper latestVersion
+    openssl: null,         // null = use per-helper default
     onlyChanged: false,
     dryRun: false,
   };
@@ -58,6 +70,12 @@ function parseArgs(argv) {
       case '--out':         out.outDir = argv[++i]; break;
       case '--server':      (out.servers = out.servers || []).push(argv[++i]); break;
       case '--guideline':   (out.guidelines = out.guidelines || []).push(argv[++i]); break;
+      case '--config':      out.config = argv[++i]; break;
+      case '--hsts':        out.hsts = argv[++i] !== 'false'; break;
+      case '--ocsp':        out.ocsp = argv[++i] !== 'false'; break;
+      case '--pq':          out.pq = argv[++i]; break;
+      case '--version':     out.version = argv[++i]; break;
+      case '--openssl':     out.openssl = argv[++i]; break;
       case '--only-changed':out.onlyChanged = true; break;
       case '--dry-run':     out.dryRun = true; break;
       case '-h':
@@ -68,6 +86,12 @@ function parseArgs(argv) {
   --out <dir>           output directory (default: fixtures/grid)
   --server <name>       restrict to one helper (repeatable)
   --guideline <ver>     restrict to one guideline (repeatable)
+  --config <profile>    restrict to one Mozilla profile: modern|intermediate|old
+  --hsts true|false     restrict to one HSTS setting
+  --ocsp true|false     restrict to one OCSP-stapling setting
+  --pq <mode>           restrict to one PQ mode: none|hybrid|only
+  --version <ver>       override server version for all rendered cells
+  --openssl <ver>       override OpenSSL version for all rendered cells
   --only-changed        write files whose content changed
   --dry-run             print what would be written
 `);
@@ -120,6 +144,14 @@ function main() {
       process.exit(2);
     }
     for (const cell of axes.gridFor(server, { guidelines })) {
+      // Apply optional single-cell filters
+      if (opts.config !== null && cell.profile !== opts.config) continue;
+      if (opts.hsts !== null && cell.hsts !== opts.hsts) continue;
+      if (opts.ocsp !== null && cell.ocsp !== opts.ocsp) continue;
+      if (opts.pq !== null && cell.pqMode !== opts.pq) continue;
+      // Override version / openssl when the caller specifies them
+      if (opts.version !== null) cell.serverVersion = opts.version;
+      if (opts.openssl !== null) cell.opensslVersion = opts.openssl;
       total++;
       const fname = axes.filenameFor({
         server: cell.server,
