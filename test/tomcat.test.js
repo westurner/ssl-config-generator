@@ -17,7 +17,7 @@
 // supportsCurveSelection:false — Tomcat's SSLHostConfig doesn't expose a
 // per-curve preference directive, so the harness skips the curves-presence
 // check.
-import { runStandardHelperSuite, BARE_TLSV1 } from './_helpers/harness.js';
+import { runStandardHelperSuite } from './_helpers/harness.js';
 import tomcat from '../src/js/helpers/tomcat.js';
 
 runStandardHelperSuite({
@@ -29,15 +29,15 @@ runStandardHelperSuite({
   cipherFormat: 'openssl',
   commentLine: /<!--[\s\S]*?-->/g,
   protocolDirective: {
-    modern:       /protocols="TLSv1\.3"/,
-    intermediate: /protocols="TLSv1\.2,TLSv1\.3"/,
     old:          /protocols="TLSv1,TLSv1\.1,TLSv1\.2,TLSv1\.3"/,
+    intermediate: /protocols="TLSv1\.2,TLSv1\.3"/,
+    modern:       /protocols="TLSv1\.3"/,
   },
   versionTokens: {
-    'TLSv1.3': /\bTLSv1\.3\b/,
-    'TLSv1.2': /\bTLSv1\.2\b/,
+    'TLSv1':   /\bTLSv1\b(?![.\d])/,
     'TLSv1.1': /\bTLSv1\.1\b/,
-    'TLSv1':   BARE_TLSV1,
+    'TLSv1.2': /\bTLSv1\.2\b/,
+    'TLSv1.3': /\bTLSv1\.3\b/,
   },
   // The HSTS contract is encoded BOTH as an "Equivalent rendered response
   // header:" line in the leading comment AND as live <init-param> elements

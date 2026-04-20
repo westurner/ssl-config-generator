@@ -15,13 +15,13 @@ runStandardHelperSuite({
   supportsCurveSelection: false,  // configs.js: coturn (TURN/STUN) cannot select TLS curves
   cipherFormat: 'openssl',
   protocolDirective: {
-    modern:       /no-sslv2\nno-sslv3\nno-tlsv1\nno-tlsv1_1\nno-tlsv1_2\n/,
-    intermediate: /no-sslv2\nno-sslv3\nno-tlsv1\nno-tlsv1_1\n/,
     old:          /no-sslv2\nno-sslv3\n/,
+    intermediate: /no-sslv2\nno-sslv3\nno-tlsv1\nno-tlsv1_1\n/,
+    modern:       /no-sslv2\nno-sslv3\nno-tlsv1\nno-tlsv1_1\nno-tlsv1_2\n/,
   },
   negationVersionTokens: {
-    'TLSv1.2': /^no-tlsv1_2$/m,
-    'TLSv1.1': /^no-tlsv1_1$/m,
     'TLSv1':   /^no-tlsv1$/m,
+    'TLSv1.1': /^no-tlsv1_1$/m,
+    'TLSv1.2': /^no-tlsv1_2$/m,
   },
 });

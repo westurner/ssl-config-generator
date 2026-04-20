@@ -16,9 +16,9 @@ runStandardHelperSuite({
   supportsCurveSelection: false,  // configs.js: LiteSpeed has no curve-preference directive
   cipherFormat: 'openssl',
   protocolDirective: {
-    modern:       /<sslProtocol>16<\/sslProtocol>/,
-    intermediate: /<sslProtocol>24<\/sslProtocol>/,
     old:          /<sslProtocol>30<\/sslProtocol>/,
+    intermediate: /<sslProtocol>24<\/sslProtocol>/,
+    modern:       /<sslProtocol>16<\/sslProtocol>/,
   },
   hstsHeader: /Header Set Strict-Transport-Security: max-age=63072000; includeSubDomains/,
 });

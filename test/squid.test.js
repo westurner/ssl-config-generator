@@ -17,13 +17,13 @@ runStandardHelperSuite({
   supportsCurveSelection: false,  // configs.js: Squid has no curve-preference directive
   cipherFormat: 'openssl',
   protocolDirective: {
-    modern:       /options=NO_SSLv3,NO_TLSv1,NO_TLSv1_1,NO_TLSv1_2,NO_TICKET\b/,
-    intermediate: /options=NO_SSLv3,NO_TLSv1,NO_TLSv1_1,NO_TICKET\b/,
     old:          /options=NO_SSLv3,NO_TICKET\b/,
+    intermediate: /options=NO_SSLv3,NO_TLSv1,NO_TLSv1_1,NO_TICKET\b/,
+    modern:       /options=NO_SSLv3,NO_TLSv1,NO_TLSv1_1,NO_TLSv1_2,NO_TICKET\b/,
   },
   negationVersionTokens: {
-    'TLSv1.2': /\bNO_TLSv1_2\b/,
-    'TLSv1.1': /\bNO_TLSv1_1\b/,
     'TLSv1':   /\bNO_TLSv1\b(?!_)/,
+    'TLSv1.1': /\bNO_TLSv1_1\b/,
+    'TLSv1.2': /\bNO_TLSv1_2\b/,
   },
 });

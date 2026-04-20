@@ -16,16 +16,17 @@ runStandardHelperSuite({
   supportsCurveSelection: false,
   cipherFormat: 'openssl',
   protocolDirective: {
-    modern:       /ssl_min_protocol_version = 'TLSv1\.3'/,
-    intermediate: /ssl_min_protocol_version = 'TLSv1\.2'/,
     old:          /ssl_min_protocol_version = 'TLSv1'/,
+    intermediate: /ssl_min_protocol_version = 'TLSv1\.2'/,
+    modern:       /ssl_min_protocol_version = 'TLSv1\.3'/,
   },
-  // Pre-12 omits ssl_min_protocol_version (lines 13-16); pre-10 omits
-  // ssl_dh_params_file (lines 28-33). Hit both branches for coverage.
+  // Sorted by serverVersion ascending; pre-10 omits ssl_dh_params_file
+  // (lines 28-33); pre-12 omits ssl_min_protocol_version (lines 13-16);
+  // v18+ adds ssl_groups (configs.js still ships v17, but we exercise the
+  // future branch for coverage).
   legacyVersions: [
-    { serverVersion: '11.0', label: 'pre-12 (no ssl_min_protocol_version)' },
     { serverVersion: '9.6',  label: 'pre-10 (no ssl_dh_params_file)' },
-    // Hit the v18+ ssl_groups branch even though configs.js still ships v17.
+    { serverVersion: '11.0', label: 'pre-12 (no ssl_min_protocol_version)' },
     { serverVersion: '18.0', label: 'v18+ (ssl_groups branch)' },
   ],
 });

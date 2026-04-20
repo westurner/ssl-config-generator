@@ -16,11 +16,11 @@ runStandardHelperSuite({
   cipherFormat: 'go',
   commentLine: /^\s*\/\/.*$/gm,
   protocolDirective: {
-    modern:       /MinVersion: tls\.VersionTLS13,/,
-    intermediate: /MinVersion: tls\.VersionTLS12,/,
     // The 'old' Mozilla profile floor is TLSv1 (state.js spelling), which
     // go.js maps to VersionTLS10.
     old:          /MinVersion: tls\.VersionTLS10,/,
+    intermediate: /MinVersion: tls\.VersionTLS12,/,
+    modern:       /MinVersion: tls\.VersionTLS13,/,
   },
   // Go's tls.Config exposes only MinVersion; per-version gating isn't
   // meaningful, so we let the harness fall back to protocolDirective.modern.

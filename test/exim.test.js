@@ -14,13 +14,13 @@ runStandardHelperSuite({
   supportsHsts: false,
   cipherFormat: 'openssl',
   protocolDirective: {
-    modern:       /openssl_options = \+no_sslv2 \+no_sslv3 \+no_tlsv1 \+no_tlsv1_1 \+no_tlsv1_2\n/,
-    intermediate: /openssl_options = \+no_sslv2 \+no_sslv3 \+no_tlsv1 \+no_tlsv1_1\n/,
     old:          /openssl_options = \+no_sslv2 \+no_sslv3\n/,
+    intermediate: /openssl_options = \+no_sslv2 \+no_sslv3 \+no_tlsv1 \+no_tlsv1_1\n/,
+    modern:       /openssl_options = \+no_sslv2 \+no_sslv3 \+no_tlsv1 \+no_tlsv1_1 \+no_tlsv1_2\n/,
   },
   negationVersionTokens: {
-    'TLSv1.2': /\+no_tlsv1_2\b/,
-    'TLSv1.1': /\+no_tlsv1_1\b/,
     'TLSv1':   /\+no_tlsv1\b(?!_)/,
+    'TLSv1.1': /\+no_tlsv1_1\b/,
+    'TLSv1.2': /\+no_tlsv1_2\b/,
   },
 });

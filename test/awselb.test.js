@@ -5,7 +5,7 @@
 // `- Name: ECDHE-… / Value: true`. configs.js does not set cipherFormat
 // → defaults to 'openssl', and ELB's supportedCiphers list IS in OpenSSL
 // form. ELB has no HSTS support (configs.js: supportsHsts:false).
-import { runStandardHelperSuite, BARE_TLSV1 } from './_helpers/harness.js';
+import { runStandardHelperSuite } from './_helpers/harness.js';
 import awselb from '../src/js/helpers/awselb.js';
 
 runStandardHelperSuite({
@@ -16,14 +16,14 @@ runStandardHelperSuite({
   supportsCurveSelection: false,    // configs.js: AWS ELB doesn't expose curve preference
   cipherFormat: 'openssl',
   protocolDirective: {
-    modern:       /Name: Protocol-TLSv1\.3\b/,
-    intermediate: /Name: Protocol-TLSv1\.2\b[\s\S]*Name: Protocol-TLSv1\.3\b/,
     old:          /Name: Protocol-TLSv1\b[\s\S]*Name: Protocol-TLSv1\.3\b/,
+    intermediate: /Name: Protocol-TLSv1\.2\b[\s\S]*Name: Protocol-TLSv1\.3\b/,
+    modern:       /Name: Protocol-TLSv1\.3\b/,
   },
   versionTokens: {
-    'TLSv1.3': /Protocol-TLSv1\.3\b/,
-    'TLSv1.2': /Protocol-TLSv1\.2\b/,
+    'TLSv1':   /Protocol-\bTLSv1\b(?![.\d])/,
     'TLSv1.1': /Protocol-TLSv1\.1\b/,
-    'TLSv1':   new RegExp('Protocol-' + BARE_TLSV1.source),
+    'TLSv1.2': /Protocol-TLSv1\.2\b/,
+    'TLSv1.3': /Protocol-TLSv1\.3\b/,
   },
 });

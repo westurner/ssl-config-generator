@@ -14,9 +14,9 @@ runStandardHelperSuite({
   supportsHsts: false,
   cipherFormat: 'openssl',
   protocolDirective: {
-    modern:       /smtpd_tls_mandatory_protocols = >=TLSv1\.3\b/,
-    intermediate: /smtpd_tls_mandatory_protocols = >=TLSv1\.2\b/,
     old:          /smtpd_tls_mandatory_protocols = >=TLSv1\b/,
+    intermediate: /smtpd_tls_mandatory_protocols = >=TLSv1\.2\b/,
+    modern:       /smtpd_tls_mandatory_protocols = >=TLSv1\.3\b/,
   },
   // Postfix 3.6+ names only the floor protocol; per-version gating doesn't
   // apply. The harness will fall back to re-asserting protocolDirective.modern.

@@ -16,20 +16,20 @@ runStandardHelperSuite({
   supportsHsts: true,
   cipherFormat: 'iana',  // Traefik renders bare IANA names inside cipherSuites=[…].
   protocolDirective: {
-    modern:       /minVersion = "VersionTLS13"/,
-    intermediate: /minVersion = "VersionTLS12"/,
     // 'old' profile starts at TLSv1; the helper maps that to "VersionTLS10".
     old:          /minVersion = "VersionTLS10"/,
+    intermediate: /minVersion = "VersionTLS12"/,
+    modern:       /minVersion = "VersionTLS13"/,
   },
   // Traefik names only the minimum version. Skip per-version gating (the
   // harness will re-check protocolDirective.modern instead).
-  // Traefik 2.0+ supports stsIncludeSubdomains (Headers middleware:
-  // pkg/middlewares/headers/secure.go). The helper now emits it
-  // uncommented when form.hsts is enabled, matching every other
-  // supportsHsts:true helper and the harness's default M3 contract.
+  // Traefik 2.0+ supports stsIncludeSubdomains (Headers middleware).
+  // The helper now emits it uncommented when form.hsts is enabled,
+  // matching every other supportsHsts:true helper and the harness's
+  // default HSTS-includeSubDomains contract.
   hstsHeader: /stsSeconds = 63072000\n\s+stsIncludeSubdomains = true/,
-  // Exercise the legacy 1.x configuration path (different syntax, lines 90–
-  // 112 of traefik.js) and the PQ-only branch (line 16-18).
+  // Exercise the legacy 1.x configuration path (different syntax) and
+  // the PQ-only branch.
   legacyVersions: [
     { serverVersion: '1.7.34', label: 'traefik 1.x (defaultEntryPoints style)' },
   ],

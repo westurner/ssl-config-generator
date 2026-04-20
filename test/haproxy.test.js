@@ -16,9 +16,9 @@ runStandardHelperSuite({
     // HAProxy 2.2+ emits "ssl-min-ver" with the lowest version in the list.
     // The 'old' profile starts at TLSv1, which the helper renders as
     // "TLSv1.0".
-    modern:       /ssl-default-bind-options[^\n]*ssl-min-ver TLSv1\.3\b/,
-    intermediate: /ssl-default-bind-options[^\n]*ssl-min-ver TLSv1\.2\b/,
     old:          /ssl-default-bind-options[^\n]*ssl-min-ver TLSv1\.0\b/,
+    intermediate: /ssl-default-bind-options[^\n]*ssl-min-ver TLSv1\.2\b/,
+    modern:       /ssl-default-bind-options[^\n]*ssl-min-ver TLSv1\.3\b/,
   },
   // For protocol-gating: ssl-min-ver only ever names ONE version (the
   // lowest). So we don't supply versionTokens; the harness falls back to

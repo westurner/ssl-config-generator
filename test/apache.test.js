@@ -1,5 +1,5 @@
 // apache (mod_ssl) helper — generic-suite tests via the shared harness.
-import { runStandardHelperSuite, BARE_TLSV1 } from './_helpers/harness.js';
+import { runStandardHelperSuite } from './_helpers/harness.js';
 import apache from '../src/js/helpers/apache.js';
 
 runStandardHelperSuite({
@@ -9,15 +9,15 @@ runStandardHelperSuite({
   supportsHsts: true,
   cipherFormat: 'openssl',
   protocolDirective: {
-    modern:       /SSLProtocol\s+-all \+TLSv1\.3\n/,
-    intermediate: /SSLProtocol\s+-all \+TLSv1\.2 \+TLSv1\.3\n/,
     old:          /SSLProtocol\s+-all \+TLSv1 \+TLSv1\.1 \+TLSv1\.2 \+TLSv1\.3\n/,
+    intermediate: /SSLProtocol\s+-all \+TLSv1\.2 \+TLSv1\.3\n/,
+    modern:       /SSLProtocol\s+-all \+TLSv1\.3\n/,
   },
   versionTokens: {
-    'TLSv1.3': /\+TLSv1\.3\b/,
-    'TLSv1.2': /\+TLSv1\.2\b/,
+    'TLSv1':   /\+\bTLSv1\b(?![.\d])/,
     'TLSv1.1': /\+TLSv1\.1\b/,
-    'TLSv1':   new RegExp('\\+' + BARE_TLSV1.source),
+    'TLSv1.2': /\+TLSv1\.2\b/,
+    'TLSv1.3': /\+TLSv1\.3\b/,
   },
   hstsHeader: /Header[^\n]*set Strict-Transport-Security "max-age=63072000; includeSubDomains"/,
   // Pre-2.4.17 omits the HTTP/2 Protocols line (lines 49-54); pre-2.4.7

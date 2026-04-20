@@ -62,14 +62,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PROFILES, makeOutput, makeForm } from './fixtures.js';
 
-// Shared regex constants (re-used across many per-helper test files).
-//
-// Match the bare TLSv1 token (legacy 'old'-profile floor — state.js spelling)
-// while explicitly EXCLUDING TLSv1.1 / TLSv1.2 / TLSv1.3 via a negative
-// lookahead on a dotted-decimal extension. Lifted from per-test files so
-// adding a new TLS-version revision touches one place.
-export const BARE_TLSV1 = /\bTLSv1\b(?![.\d])/;
-
 // Strip text fragments that legitimately CONTAIN a forbidden token but that
 // have the OPPOSITE security meaning (i.e. they DISABLE the primitive). For
 // example exim emits `+no_sslv3` and squid emits `NO_SSLv3` to *forbid*
@@ -247,10 +239,10 @@ function _consumeOptOut(category, optOuts, out) {
 //     // protocol version, used for the protocol-gating test. Each entry
 //     // must match if and only if that version is in output.protocols.
 //     versionTokens: {
-//       'TLSv1.3': /\bTLSv1\.3\b/,
-//       'TLSv1.2': /\bTLSv1\.2\b/,
+//       'TLSv1':   /\bTLSv1\b(?![.\d])/,
 //       'TLSv1.1': /\bTLSv1\.1\b/,
-//       'TLSv1':   BARE_TLSV1,
+//       'TLSv1.2': /\bTLSv1\.2\b/,
+//       'TLSv1.3': /\bTLSv1\.3\b/,
 //     },
 //
 //     // OPTIONAL (mutually exclusive with versionTokens): per-version regex
@@ -261,10 +253,10 @@ function _consumeOptOut(category, optOuts, out) {
 //     // strips matching negation tokens before the forbidden-primitive
 //     // scan (a `+no_sslv3` is a *good* SSLv3 mention).
 //     negationVersionTokens: {
-//       'TLSv1.2': /\+no_tlsv1_2\b/,
-//       'TLSv1.1': /\+no_tlsv1_1\b/,
-//       'TLSv1':   /\+no_tlsv1\b(?!_)/,
 //       'SSLv3':   /\+no_sslv3\b/,
+//       'TLSv1':   /\+no_tlsv1\b(?!_)/,
+//       'TLSv1.1': /\+no_tlsv1_1\b/,
+//       'TLSv1.2': /\+no_tlsv1_2\b/,
 //     },
 //
 //     hstsHeader: /Strict-Transport-Security[^\n]*max-age=63072000[^\n]*includeSubDomains/,

@@ -20,9 +20,9 @@ runStandardHelperSuite({
   formOverrides: { serverName: 'AWS ALB' },
   protocolDirective: {
     // ALB picks a single managed-policy string per profile.
-    modern:       /SslPolicy: ELBSecurityPolicy-TLS13-1-3-2021-06\b/,
-    intermediate: /SslPolicy: ELBSecurityPolicy-TLS13-1-2-Res-2021-06\b/,
     old:          /SslPolicy: ELBSecurityPolicy-TLS-1-0-2015-04\b/,
+    intermediate: /SslPolicy: ELBSecurityPolicy-TLS13-1-2-Res-2021-06\b/,
+    modern:       /SslPolicy: ELBSecurityPolicy-TLS13-1-3-2021-06\b/,
   },
   optOuts: {
     // The helper documents up-front that ALB doesn't expose ciphers/protocols

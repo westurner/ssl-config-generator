@@ -13,9 +13,9 @@ runStandardHelperSuite({
   cipherFormat: 'openssl',
   formOverrides: { opensslVersion: '3.0.0' },
   protocolDirective: {
-    modern:       /sslVersionMin = TLSv1\.3\n/,
-    intermediate: /sslVersionMin = TLSv1\.2\n/,
     old:          /sslVersionMin = TLSv1\n/,
+    intermediate: /sslVersionMin = TLSv1\.2\n/,
+    modern:       /sslVersionMin = TLSv1\.3\n/,
   },
   // Pre-5.50 stunnel emits options = NO_TLSv1.x rather than sslVersionMin
   // (lines 17-21). Pre-1.0.1 OpenSSL adds NO_SSLv2/3 options (lines 23-27).

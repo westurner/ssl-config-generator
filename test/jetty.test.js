@@ -19,14 +19,14 @@ runStandardHelperSuite({
   // Strip XML comments before the protocol-gating check.
   commentLine: /<!--[\s\S]*?-->/g,
   protocolDirective: {
-    modern:       /<Item>TLSv1\.3<\/Item>/,
-    intermediate: /<Item>TLSv1\.2<\/Item>[\s\S]*<Item>TLSv1\.3<\/Item>/,
     old:          /<Item>TLSv1<\/Item>[\s\S]*<Item>TLSv1\.3<\/Item>/,
+    intermediate: /<Item>TLSv1\.2<\/Item>[\s\S]*<Item>TLSv1\.3<\/Item>/,
+    modern:       /<Item>TLSv1\.3<\/Item>/,
   },
   versionTokens: {
-    'TLSv1.3': /<Item>TLSv1\.3<\/Item>/,
-    'TLSv1.2': /<Item>TLSv1\.2<\/Item>/,
-    'TLSv1.1': /<Item>TLSv1\.1<\/Item>/,
     'TLSv1':   /<Item>TLSv1<\/Item>/,
+    'TLSv1.1': /<Item>TLSv1\.1<\/Item>/,
+    'TLSv1.2': /<Item>TLSv1\.2<\/Item>/,
+    'TLSv1.3': /<Item>TLSv1\.3<\/Item>/,
   },
 });

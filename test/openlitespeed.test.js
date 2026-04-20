@@ -15,9 +15,9 @@ runStandardHelperSuite({
   supportsCurveSelection: false,  // configs.js: OpenLiteSpeed has no curve-preference directive
   cipherFormat: 'openssl',
   protocolDirective: {
-    modern:       /sslProtocol\s+16\b/,
-    intermediate: /sslProtocol\s+24\b/,
     old:          /sslProtocol\s+30\b/,
+    intermediate: /sslProtocol\s+24\b/,
+    modern:       /sslProtocol\s+16\b/,
   },
   hstsHeader: /Header Set Strict-Transport-Security: max-age=63072000; includeSubDomains/,
   // Pre-1.4.35 emits the "may not support the following configurations"

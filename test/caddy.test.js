@@ -16,9 +16,9 @@ runStandardHelperSuite({
     // list; otherwise it leaves a commented-out `#protocols tls1.2 tls1.3`
     // (Caddy's safe defaults). Both 'intermediate' and 'old' include
     // TLSv1.2, so they take the commented form.
-    modern:       /^\s*protocols tls1\.3\b/m,
-    intermediate: /^\s*#protocols tls1\.2 tls1\.3\b/m,
     old:          /^\s*#protocols tls1\.2 tls1\.3\b/m,
+    intermediate: /^\s*#protocols tls1\.2 tls1\.3\b/m,
+    modern:       /^\s*protocols tls1\.3\b/m,
   },
   versionTokens: {
     // Caddy supports only TLSv1.2+. The helper says so in a comment and
