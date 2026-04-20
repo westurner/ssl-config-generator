@@ -90,8 +90,9 @@ module.exports = {
     name: 'Apache',
     // mod_ssl is built on OpenSSL.
     usesOpenssl: true,
-    // SSLCipherSuite has been in mod_ssl since Apache httpd 2.0
-    // (the original mod_ssl merge into the httpd 2.0 tree).
+    // SSLCipherSuite shipped with mod_ssl in Apache httpd 2.0.0 — the
+    // initial release of the 2.x series (the original merge of mod_ssl
+    // into the httpd tree).
     supportsCipherSelection: '2.0.0',
     // SSLOpenSSLConfCmd Curves landed in Apache httpd 2.4.7
     // (mod_ssl, Nov 2013); see helpers/apache.js:68
@@ -372,8 +373,10 @@ module.exports = {
     // introduced).
     supportsCurveSelection: '1.4.50',
     // helpers/lighttpd.js:174-202 emits HSTS via mod_setenv /
-    // mod_redirect; mod_setenv (and the response-header form used here)
-    // has been part of the 1.4 series since well before 1.4.46.
+    // mod_redirect; both modules have been part of the lighttpd 1.4
+    // series for many releases, but the exact first version isn't
+    // tracked here — declared as `true` ("supported, version
+    // unknown") rather than a version string.
     supportsHsts: true,
     supportsOcspStapling: '1.4.56',
     // No PQ-aware code path; PQ groups depend on linked OpenSSL but
@@ -574,8 +577,10 @@ module.exports = {
     // PostgreSQL builds against OpenSSL.
     usesOpenssl: true,
     // helpers/postgresql.js:24 emits `ssl_ciphers = ...` from
-    // output.ciphers; ssl_ciphers has been a libpq/server GUC since the
-    // earliest PostgreSQL TLS support.
+    // output.ciphers; ssl_ciphers has been a server GUC for many
+    // PostgreSQL major releases, but the exact first version isn't
+    // tracked here — declared as `true` ("supported, version
+    // unknown") rather than a version string.
     supportsCipherSelection: true,
     supportsHsts: false,
     // ssl_groups (the per-server TLS named-group preference list) was
@@ -601,9 +606,11 @@ module.exports = {
     usesOpenssl: true,
     // helpers/proftpd.js:39 emits `TLSCipherSuite ...` from output.ciphers.
     supportsCipherSelection: true,
-    // helpers/proftpd.js:34 emits `TLSECDHCurve ...` from output.tlsCurves
-    // when OpenSSL >= 1.0.2; the directive itself has been part of
-    // mod_tls since the early 1.3.x series.
+    // helpers/proftpd.js:34 emits `TLSECDHCurve ...` from
+    // output.tlsCurves when OpenSSL >= 1.0.2; the directive has been
+    // part of mod_tls for many 1.3.x releases, but the exact first
+    // version isn't tracked here — declared as `true` ("supported,
+    // version unknown") rather than a version string.
     supportsCurveSelection: true,
     supportsHsts: false,
     supportsOcspStapling: '1.3.6',
