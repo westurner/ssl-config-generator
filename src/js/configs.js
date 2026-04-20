@@ -22,7 +22,19 @@
 //                          unknown / not yet recorded").
 //   - (omitted)          → no PQ surface; the helper ignores form.pq.
 //
-// supportsCipherSelection and supportsCurveSelection are assumed `true` unless defined otherwise.
+// supportsCipherSelection, supportsCurveSelection, and supportsHsts are
+// assumed `true` unless defined otherwise. Each accepts the same value
+// shapes as `supportsPq` / `supportsOcspStapling`:
+//   - '<ver>'  → the first upstream release that surfaced the feature (the
+//                value is documentation-only — state.js coerces these three
+//                flags to a boolean via `!== false` so the version string
+//                does NOT cause runtime gating; `eolBefore` is the floor
+//                that decides which historical versions are even
+//                selectable in the UI). Mirrors how `supportsPq` and
+//                version-string `supportsOcspStapling` are encoded.
+//   - true     → "supported, version unknown / not yet recorded".
+//   - (omit)   → same as true.
+//   - false    → not supported by this helper at all.
 //   - supportsCipherSelection:false  → the helper cannot emit a per-cipher list
 //                                      (e.g. AWS ALB / s2n-tls expose only named
 //                                      "policy" identifiers).
@@ -31,6 +43,8 @@
 //                                      Jetty, Redis, Squid, AWS ELB/ALB, s2n-tls,
 //                                      rustls, the LiteSpeed family, Coturn,
 //                                      OracleHTTP).
+//   - supportsHsts:false             → not an HTTP server (Postfix, Dovecot,
+//                                      OpenLDAP, Coturn, MySQL, …).
 //
 //   Why this matters (security): being able to specify ciphers / curves
 //   explicitly in a server config is itself a security-hardening feature.
@@ -58,6 +72,16 @@ module.exports = {
     latestVersion: '2.4.60',
     eolBefore: '2.4.0',
     name: 'Apache',
+    // SSLOpenSSLConfCmd Curves landed in Apache httpd 2.4.7
+    // (mod_ssl, Nov 2013); see helpers/apache.js:68
+    // (`minver("2.4.11", form.serverVersion)` for the directive choice and
+    // CHANGES_2.4 for the original `SSLOpenSSLConfCmd` introduction in
+    // 2.4.7). Earlier 2.x had only the implicit OpenSSL default group list.
+    supportsCurveSelection: '2.4.7',
+    // mod_headers `Header always set` was introduced in Apache httpd 2.0;
+    // see helpers/apache.js:60. (HSTS itself is just an HTTP response
+    // header, mod_headers is what emits it.)
+    supportsHsts: '2.0.0',
     supportsOcspStapling: '2.4.13',
     tls13: '2.4.36',
   },
@@ -88,6 +112,13 @@ module.exports = {
     latestVersion: '2.8.4',
     eolBefore: '2.0.0',
     name: 'Caddy',
+    // The Caddy v2 rewrite (Caddy 2.0.0, May 2020) introduced the
+    // tls.cipher_suites, tls.curves, and `header` directives the helper
+    // emits; see helpers/caddy.js:8 (`if (!minver("2.0.0", ...))` bail
+    // out). Caddy 1.x used a completely different config language.
+    supportsCipherSelection: '2.0.0',
+    supportsCurveSelection: '2.0.0',
+    supportsHsts: '2.0.0',
     // Caddy 2.10.0 (Apr 2025) shipped support for the standardised
     // X25519MLKEM768 hybrid PQ group by default. Earlier 2.x had only
     // experimental Kyber drafts via Go's crypto/tls.
@@ -109,6 +140,10 @@ module.exports = {
     name: 'Dovecot',
     showSupports: false,
     supportsHsts: false,
+    // ssl_curve_list (renamed to ssl_curves in 2.4) was added in Dovecot
+    // 2.2.6 (Jul 2014). Earlier 2.2.x had no per-curve knob and used
+    // OpenSSL's compiled-in default group preference.
+    supportsCurveSelection: '2.2.6',
     tls13: '2.3.15',
   },
   exim: {
@@ -117,6 +152,11 @@ module.exports = {
     name: 'Exim',
     showSupports: false,
     supportsHsts: false,
+    // tls_eccurve was added in Exim 4.80 (May 2012) for the GnuTLS build
+    // and extended to OpenSSL builds with the helper-noted gate of
+    // 4.97 + OpenSSL 1.1.1 (helpers/exim.js:17). The capability statement
+    // is "first upstream release that surfaced the directive".
+    supportsCurveSelection: '4.80',
     tls13: '4.92.0',
   },
   go: {
@@ -124,6 +164,13 @@ module.exports = {
     latestVersion: '1.23.3',
     eolBefore: '1.22.0',
     name: 'Go',
+    // crypto/tls.Config.CipherSuites and CurvePreferences were both added
+    // in Go 1.5 (Aug 2015); see the Go 1.5 release notes
+    // (https://go.dev/doc/go1.5#crypto_tls). Earlier Go negotiated whatever
+    // the implementation chose internally with no per-suite / per-curve
+    // knob.
+    supportsCipherSelection: '1.5.0',
+    supportsCurveSelection: '1.5.0',
     // Go 1.24 (Feb 2025) added X25519MLKEM768 to crypto/tls and enabled
     // it in the default group preference list.
     supportsPq: '1.24.0',
@@ -148,6 +195,20 @@ module.exports = {
     latestVersion: '3.0',
     eolBefore: '2.2',
     name: 'HAProxy',
+    // ssl-default-bind-ciphers / -ciphersuites in the global section
+    // landed in HAProxy 1.5 (Jun 2014); see helpers/haproxy.js:5
+    // (`if (!minver("1.5.0", ...))` bail-out: the entire SSL section
+    // requires 1.5+).
+    supportsCipherSelection: '1.5.0',
+    // ssl-default-bind-curves / ssl-default-server-curves were added in
+    // HAProxy 2.9 (Dec 2023); see helpers/haproxy.js:11
+    // (`minver("2.9.0", form.serverVersion)`). Earlier versions could
+    // only set `curves` on a per-bind basis.
+    supportsCurveSelection: '2.9.0',
+    // `http-response set-header Strict-Transport-Security ...` requires
+    // HAProxy 1.5+ (the `http-response` ruleset family arrived with the
+    // 1.5 SSL/HTTP overhaul).
+    supportsHsts: '1.5.0',
     tls13: '1.8.0',
   },
   iis: {
@@ -155,6 +216,17 @@ module.exports = {
     latestVersion: '10.0.26100', // Windows Server 2025 / Win 11 24H2
     eolBefore: '10.0.17763',     // pre-Server 2019 builds are unsupported
     name: 'IIS (PowerShell)',
+    // The `Functions` REG_SZ cipher-suite-ordering value (the only
+    // operator-tunable cipher / curve knob in Schannel) is documented
+    // since Windows 10 1507 / Server 2016 (build 10.0.10240); the
+    // `EccCurves` REG_MULTI_SZ shipped at the same time.
+    supportsCipherSelection: '10.0.10240',
+    supportsCurveSelection: '10.0.10240',
+    // The IIS 10 native `<hsts>` element configured by the helper via
+    // `Set-WebConfigurationProperty` was added in IIS 10.0 v1709
+    // (Windows 10 v1709 / Windows Server, version 1709, build
+    // 10.0.16299); see helpers/iis.js:26-28.
+    supportsHsts: '10.0.16299',
     // Hybrid ML-KEM in Schannel/SymCrypt is exposed on Windows Server
     // 2025 / Win 11 24H2 (Insider builds) — first build numbered
     // 10.0.26100; group string MLKEM768X25519.
@@ -206,6 +278,13 @@ module.exports = {
     latestVersion: '1.27.3',
     eolBefore: '1.26.0',
     name: 'nginx',
+    // The `always` parameter on `add_header` (used by the helper to emit
+    // HSTS so the header is set on error responses too) was added in
+    // nginx 1.7.5; see helpers/nginx.js:33. Earlier nginx supported
+    // `add_header` since 0.5.x but only on 2xx/3xx responses, which is
+    // unsafe for HSTS (RFC 6797 §7.2 requires the header on every
+    // response over a secure transport).
+    supportsHsts: '1.7.5',
     supportsOcspStapling: '1.3.7',
     tls13: '1.13.0',
   },
@@ -220,6 +299,11 @@ module.exports = {
     name: 'OpenSSL config (openssl.cnf)',
     showSupports: false,
     supportsHsts: false,
+    // The `Groups` SSL_CONF command (the openssl.cnf form of
+    // `-groups`/`SSL_CONF_cmd("Groups", ...)`) was added in OpenSSL 1.1.1
+    // when the named-group preference list replaced the older
+    // `Curves` command for TLS 1.3.
+    supportsCurveSelection: '1.1.1',
     // OpenSSL 3.5.0 (Apr 2025) shipped built-in ML-KEM hybrid groups
     // (X25519MLKEM768, SecP256r1MLKEM768, SecP384r1MLKEM1024); gated by
     // minver('3.5.0', form.opensslVersion) in src/js/helpers/opensslcnf.js.
@@ -243,6 +327,10 @@ module.exports = {
     showSupports: false,
     supportsHsts: false,
     supportsOcspStapling: false,
+    // TLSECName (slapd.conf) / olcTLSECName (cn=config) was added in
+    // OpenLDAP 2.4.36 (Nov 2013); earlier 2.4 had no operator-tunable
+    // curve / group knob and used OpenSSL's compiled-in default.
+    supportsCurveSelection: '2.4.36',
     // OpenLDAP delegates ML-KEM to its TLS backend (built-in hybrid groups
     // require OpenSSL >= 3.5.0). The 2.6 series is the supported baseline
     // that links cleanly with modern OpenSSL.
@@ -263,6 +351,11 @@ module.exports = {
     latestVersion: '12.2.1',
     name: 'Oracle HTTP',
     supportsCurveSelection: false,
+    // Oracle HTTP Server 12.2.1 (12cR2, Oct 2015) was the first release
+    // to ship `SSLOCSPEnable` and the related Oracle-mod_ossl OCSP
+    // stapling directives; see helpers/oraclehttp.js:36
+    // (`minver("12.2.1", form.serverVersion)`).
+    supportsOcspStapling: '12.2.1',
     usesOpenssl: false,
   },
   postfix: {
@@ -271,6 +364,11 @@ module.exports = {
     name: 'Postfix',
     showSupports: false,
     supportsHsts: false,
+    // tls_eecdh_auto_curves was added in Postfix 3.4.0 (Feb 2019); see
+    // helpers/postfix.js:14 (`minver("3.4.0", form.serverVersion)`).
+    // Earlier Postfix could only set a single named curve via
+    // smtpd_tls_eecdh_grade + tls_eecdh_strong_curve / _ultra_curve.
+    supportsCurveSelection: '3.4.0',
     tls13: '3.3.2',
   },
   postgresql: {
@@ -279,6 +377,13 @@ module.exports = {
     name: 'PostgreSQL',
     showSupports: false,
     supportsHsts: false,
+    // ssl_groups (the per-server TLS named-group preference list) was
+    // added in PostgreSQL 18.0; see helpers/postgresql.js:18
+    // (`minver("18.0.0", form.serverVersion)`). PostgreSQL 13–17 had only
+    // ssl_ecdh_curve (single curve, ECDHE-only) — captured implicitly by
+    // the helper's fallback emit; the capability flag here documents the
+    // first release with a true preference-list directive.
+    supportsCurveSelection: '18.0.0',
     tls13: '12.0',
   },
   proftpd: {
@@ -296,6 +401,14 @@ module.exports = {
     name: 'Python (ssl module)',
     showSupports: false,
     supportsHsts: false,
+    // SSLContext.set_ciphers() was added in Python 3.2; SSLContext itself
+    // and per-context cipher selection arrived in 3.2 (Feb 2011) so this
+    // is the floor for cipher selection.
+    supportsCipherSelection: '3.2.0',
+    // SSLContext.set_ecdh_curve() was added in Python 3.3 (Sep 2012).
+    // SSLContext.set_groups() (multi-group preference list incl.
+    // X25519MLKEM768) was added in 3.13 — captured by supportsPq below.
+    supportsCurveSelection: '3.3.0',
     // Python 3.13 (Oct 2024) added SSLContext.set_groups(), which the
     // helper uses to pass X25519MLKEM768 et al. as a multi-group preference
     // list; older 3.x can only pin a single classical curve via
@@ -316,6 +429,11 @@ module.exports = {
     showSupports: false,
     supportsCurveSelection: false,
     supportsHsts: false,
+    // Redis 6.0.0 (Apr 2020) was the first release with built-in TLS
+    // support and the `tls-ciphers` / `tls-ciphersuites` config
+    // directives; see helpers/redis.js:40 (`!minver("6.0", ...)` bail
+    // out — the entire TLS config is gated on Redis 6+).
+    supportsCipherSelection: '6.0.0',
     tls13: '6.0',
   },
   rust: {
@@ -384,6 +502,12 @@ module.exports = {
     latestVersion: '3.2.1',
     eolBefore: '2.11.0',
     name: 'Traefik',
+    // Traefik 2.0.0 (Sep 2019) was the rewrite that introduced the
+    // `tls.options` block (cipherSuites, curvePreferences, minVersion,
+    // ...) the helper emits. Traefik 1.x had a different config language
+    // with no equivalent per-suite / per-curve knob.
+    supportsCipherSelection: '2.0.0',
+    supportsCurveSelection: '2.0.0',
     // Traefik 3.4.0 (Apr 2025) was the first stable release built with
     // Go >= 1.24 and therefore the first to negotiate X25519MLKEM768 via
     // its tls.curvePreferences directive.
