@@ -16,15 +16,17 @@
 //   3. Supports a `-Restore` switch that re-imports the .reg backup so the
 //      operator can revert without hand-editing anything.
 //
-// References:
-//   - HKLM\…\SCHANNEL\Protocols layout:
-//       https://learn.microsoft.com/windows-server/security/tls/manage-tls
-//   - Cipher-suite ordering registry value:
-//       https://learn.microsoft.com/windows/win32/secauthn/prioritizing-schannel-cipher-suites
-//   - HSTS in IIS 10 (1709+):
-//       https://learn.microsoft.com/iis/get-started/whats-new-in-iis-10/iis-10-version-1709-hsts
-//   - Hybrid PQ key exchange in Schannel (Server 2025 / Win 11 24H2):
-//       https://techcommunity.microsoft.com/t5/security-compliance-and-identity/post-quantum-cryptography-in-windows-insider-builds/ba-p/4127248
+// References (see src/static/citations.bib):
+//   - HKLM\…\SCHANNEL\Protocols layout:                  ms-manage-tls
+//   - Per-value Schannel registry knobs:                 ms-tls-registry
+//   - Cipher-suite ordering ("Functions" REG_SZ):        ms-cipher-suite-order
+//   - Schannel cipher-suite implementation status:       ms-tls-cipher-suites
+//   - TLS 1.3 in Schannel (Server 2022+):                ms-tls13-schannel
+//   - HSTS in IIS 10 v1709+:                             ms-iis10-hsts
+//   - Hybrid PQ (ML-KEM) in Schannel / SymCrypt:         ms-pqc-windows-insider, ms-symcrypt-mlkem
+//   - Mozilla Server Side TLS guideline:                 mozilla-server-side-tls
+//   - ML-KEM specification:                              nist-fips-203
+//   - Hybrid ECDHE-MLKEM TLS NamedGroup codepoints:      ietf-tls-mlkem
 //
 // Schannel group / curve naming (mapped from the Mozilla guideline names):
 //   X25519           -> curve25519
