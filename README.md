@@ -184,6 +184,83 @@ the test runner can `import` the ES-module helpers in `src/js/helpers/`. New
 templates should ship with at least one test that asserts the shape of the
 generated config (key directives, version-gated comments, PQ-mode behaviour).
 
+## Off-line rendering tools
+
+Two helper scripts under [`scripts/`](scripts/) drive the same renderer
+that powers the live site (`src/js/render.js`), so their output is
+byte-identical to what the deployed page would produce for the same
+URL fragment. Both are wrapped by `npm` aliases for convenience.
+
+### `scripts/render-grid.js` — config snapshot fixtures
+
+```bash
+npm run render-grid                              # regenerate every cell
+npm run render-grid -- --server nginx            # restrict to one helper
+npm run render-grid -- --only-changed            # write only cells that differ
+npm run render-grid -- --dry-run                 # print what would be written
+```
+
+`render-grid` materialises the *helpers × parameters* grid as a tree of
+exact-output snapshot files under
+[`fixtures/grid/`](fixtures/grid/), one file per
+`(server, guideline, serverVersion, profile, pqMode, hsts, ocsp)` cell.
+Each file's name encodes its cell, e.g.
+`fixtures/grid/nginx/nginx__g5.7__v1.27.0__intermediate__pq-hybrid__hsts1__ocsp1.conf`.
+[`test/grid.test.js`](test/grid.test.js) re-renders every cell on each
+`npm test` run and asserts byte-equality against the committed file —
+a one-character drift in any helper's output shows up as a one-line
+`git diff` reviewers can read directly.
+
+The runtime `generated YYYY-MM-DD …` header date is pinned to a fixed
+value (`1970-01-01`), so re-running the script on a different day does
+**not** churn every file. `--only-changed` keeps the diff focused on
+the cells your edit actually moved; `--dry-run` is useful when you
+just want to know *whether* a change is grid-affecting.
+
+Always update fixtures with this script — never hand-edit files under
+`fixtures/grid/`. Filename axes (servers, profiles, PQ modes,
+guidelines) are defined in [`src/js/grid-axes.js`](src/js/grid-axes.js),
+which is the single source of truth shared by the script and the test
+suite. Note that guideline 6.0 has no `old` profile; the grid skips
+those cells automatically.
+
+### `scripts/screenshot.js` — visual snapshots of the rendered page
+
+```bash
+# One-time setup (Playwright is in devDependencies; install Chromium):
+npx playwright install chromium
+
+# Capture the default cell (nginx @ latestVersion, intermediate, PQ hybrid):
+npm run screenshots
+
+# Pin every axis explicitly and capture the full scrolling page:
+npm run screenshots -- \
+  --server nginx --config intermediate --pq hybrid --full-page \
+  --out fixtures/screenshots/nginx-intermediate-hybrid.png
+
+# Print the full flag list:
+npm run screenshots -- --help
+```
+
+`screenshot.js` drives the live UI in headless Chromium (it auto-starts
+`npm start` on http://localhost:5500, navigates with the URL fragment
+that selects your cell, waits for `<pre id="output-config">` to render,
+and tears the dev server back down). It is **opt-in** — the
+`npm run screenshots` alias sets the required `SCG_GEN_SCREENSHOTS=1`
+environment variable for you — because Playwright + Chromium is heavy
+and image diffs are noisy (font hinting, AA, scrollbar widths, the
+header date in the rendered config). For the same reasons,
+[`fixtures/screenshots/`](fixtures/screenshots) is gitignored and
+`npm run screenshots` is intentionally **not** part of `npm test`;
+review captures locally or attach them to a PR comment. If you need a
+PNG that *is* tracked in git (for example to use in this README), pass
+`--out` with a path outside the gitignored trees (the repository root
+works for a single hero image).
+
+For agents, the [`generate-screenshot` skill](.agents/skills/generate-screenshot/SKILL.md)
+documents the full workflow, including the optional flow for refreshing
+a README screenshot.
+
 ## Post-Quantum (PQ) cryptography
 
 The generator includes a **Post-Quantum Mode** selector with three options:
