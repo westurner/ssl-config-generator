@@ -108,6 +108,23 @@ export default (form, output) => {
       ' * WARNING: the "default_pq" policy requires s2n-tls '+PQ_MIN_VERSION+' or\n'+
       ' *          newer. Older s2n-tls releases do not implement ML-KEM.\n';
     }
+    if (form.config === 'old') {
+      // The "old" profile exists to interoperate with pre-TLS-1.2 clients
+      // (TLS 1.0 / 1.1, 3DES, DHE). ML-KEM is a TLS 1.3 key-exchange
+      // group, so selecting PQ together with "old" is contradictory:
+      // "default_pq" does not negotiate the legacy primitives that "old"
+      // is meant to enable, and the legacy clients "old" targets cannot
+      // negotiate ML-KEM. Warn the user that they must pick one.
+      conf +=
+      ' *\n'+
+      ' * WARNING: the "old" Mozilla profile and Post-Quantum key exchange\n'+
+      ' *          are mutually exclusive. ML-KEM is a TLS 1.3 group, and\n'+
+      ' *          the "default_pq" policy will NOT negotiate the TLS 1.0 /\n'+
+      ' *          1.1 / 3DES / DHE primitives that the "old" profile\n'+
+      ' *          exists to enable. Choose either backwards-compatibility\n'+
+      ' *          ("old" profile, no PQ) OR forwards-compatibility\n'+
+      ' *          (PQ, "intermediate" or "modern" profile) — not both.\n';
+    }
   }
 
   // Informational ciphersuite listing (not rendered into the C config —

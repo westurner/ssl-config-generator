@@ -234,3 +234,29 @@ test('s2n: OCSP + HSTS + PQ can be enabled simultaneously', () => {
   assert.match(out, /s2n_config_set_status_request_type\(config, S2N_STATUS_REQUEST_OCSP\)/);
   assert.match(out, /Strict-Transport-Security: max-age=63072000/);
 });
+
+test('s2n: warns that "old" profile + PQ are mutually exclusive', () => {
+  // ML-KEM is a TLS 1.3 group; the "old" profile targets pre-TLS-1.2
+  // clients. Selecting both is a contradiction the user must resolve, so
+  // the rendered C must surface a clear warning in either PQ mode.
+  for (const pq of ['hybrid', 'only']) {
+    const out = s2n(baseForm({ config: 'old', pq }), BASE_OUTPUT);
+    assert.match(out, /mutually exclusive/i,
+      `expected "old" + pq=${pq} to warn about mutual exclusivity`);
+    assert.match(out, /ML-KEM is a TLS 1\.3 group/);
+    assert.match(out, /Choose either backwards-compatibility/i);
+  }
+});
+
+test('s2n: does NOT emit the old+PQ warning when only one of them is set', () => {
+  // Negative cases: warning must not fire for old-without-PQ or for
+  // PQ-without-old, otherwise we would be crying wolf.
+  const oldNoPq = s2n(baseForm({ config: 'old', pq: 'none' }), BASE_OUTPUT);
+  assert.doesNotMatch(oldNoPq, /mutually exclusive/i);
+
+  for (const config of ['modern', 'intermediate']) {
+    const pqNoOld = s2n(baseForm({ config, pq: 'hybrid' }), BASE_OUTPUT);
+    assert.doesNotMatch(pqNoOld, /mutually exclusive/i,
+      `unexpected mutual-exclusivity warning for ${config}+pq`);
+  }
+});
