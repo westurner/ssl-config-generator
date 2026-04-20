@@ -1,6 +1,7 @@
 // Unit tests for the Python `ssl` module template.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import python from '../src/js/helpers/python.js';
 
 const BASE_OUTPUT = {
@@ -143,3 +144,77 @@ test('python: notes that TLSv1.3 ciphersuites come from openssl.cnf, not from Py
   assert.match(out, /TLSv1\.3 ciphersuites are NOT exposed by Python/);
   assert.match(out, /openssl\.cnf/);
 });
+
+// ---------------------------------------------------------------------------
+// End-to-end: the rendered template must be syntactically valid Python.
+//
+// Probe for `python3` once at module load. The end-to-end tests below are
+// silently skipped when python3 is not on PATH (mirrors the `pwsh`-skip
+// pattern in test/iis.test.js): they do NOT replace the regex assertions
+// above, they supplement them with a real-Python AST parse when available.
+//
+// We use `ast.parse()` (not `compile()` / not `exec()`) so the test is
+// purely a syntactic check — no socket is opened, no SSLContext is built,
+// and the `pq=='only'` render's `raise RuntimeError(...)` parses fine even
+// though it would raise at runtime on Python < 3.13.
+// ---------------------------------------------------------------------------
+const PYTHON3 = (() => {
+  try {
+    const r = spawnSync('python3', ['-c', 'import sys, ast'], {
+      encoding: 'utf8', timeout: 10000,
+    });
+    return r.status === 0 ? 'python3' : null;
+  } catch { return null; }
+})();
+
+const PY_SKIP_REASON = 'python3 not available on PATH';
+
+// Pipe the rendered Python through `python3 -c "import sys, ast;
+// ast.parse(sys.stdin.read())"`. Returns the spawnSync result so the caller
+// can inspect status / stderr.
+function astParse(rendered) {
+  return spawnSync(
+    PYTHON3,
+    ['-c', 'import sys, ast; ast.parse(sys.stdin.read())'],
+    { input: rendered, encoding: 'utf8', timeout: 15000 },
+  );
+}
+
+test('python: rendered template parses with ast.parse() — pq=hybrid + intermediate profile',
+  { skip: PYTHON3 ? false : PY_SKIP_REASON }, () => {
+    const out = python(baseForm({ pq: 'hybrid', hsts: true }), BASE_OUTPUT);
+    const r = astParse(out);
+    assert.equal(r.status, 0,
+      `ast.parse failed (exit ${r.status}):\nSTDERR:\n${r.stderr}\n--- rendered ---\n${out}`);
+  });
+
+test('python: rendered template parses with ast.parse() — pq=only + modern profile',
+  { skip: PYTHON3 ? false : PY_SKIP_REASON }, () => {
+    // pq='only' takes the `raise RuntimeError(...)` branch in the
+    // `except AttributeError:` fallback. ast.parse is purely syntactic,
+    // so the raise statement parses cleanly even on Python < 3.13.
+    const out = python(
+      baseForm({ pq: 'only', config: 'modern' }),
+      Object.assign({}, BASE_OUTPUT, {
+        protocols: ['TLSv1.3'],
+        tlsCurves: ['X25519MLKEM768'],
+      }),
+    );
+    const r = astParse(out);
+    assert.equal(r.status, 0,
+      `ast.parse failed (exit ${r.status}):\nSTDERR:\n${r.stderr}\n--- rendered ---\n${out}`);
+  });
+
+test('python: rendered template parses with ast.parse() — pq=none + old profile (no PQ branches)',
+  { skip: PYTHON3 ? false : PY_SKIP_REASON }, () => {
+    const out = python(
+      baseForm({ pq: 'none', config: 'old', opensslVersion: '1.1.1' }),
+      Object.assign({}, BASE_OUTPUT, {
+        protocols: ['TLSv1', 'TLSv1.1', 'TLSv1.2', 'TLSv1.3'],
+        tlsCurves: ['X25519', 'prime256v1', 'secp384r1'],
+      }),
+    );
+    const r = astParse(out);
+    assert.equal(r.status, 0,
+      `ast.parse failed (exit ${r.status}):\nSTDERR:\n${r.stderr}\n--- rendered ---\n${out}`);
+  });
