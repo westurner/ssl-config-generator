@@ -28,4 +28,25 @@ runStandardHelperSuite({
   // uncommented when form.hsts is enabled, matching every other
   // supportsHsts:true helper and the harness's default M3 contract.
   hstsHeader: /stsSeconds = 63072000\n\s+stsIncludeSubdomains = true/,
+  // Exercise the legacy 1.x configuration path (different syntax, lines 90–
+  // 112 of traefik.js) and the PQ-only branch (line 16-18).
+  legacyVersions: [
+    { serverVersion: '1.7.34', label: 'traefik 1.x (defaultEntryPoints style)' },
+  ],
+  extraTests: (t) => {
+    // Cover the PQ-only branch: helper emits an explanatory comment about
+    // Traefik exposing only X25519MLKEM768 via curvePreferences.
+    t('PQ-only mode emits the X25519MLKEM768 explanatory comment', async () => {
+      const { default: traefikH } = await import('../src/js/helpers/traefik.js');
+      const { makeForm, makeOutput } = await import('./_helpers/fixtures.js');
+      const out = traefikH(
+        makeForm({ serverVersion: '3.2.1', config: 'modern', pq: 'only', hsts: false }),
+        makeOutput('modern', { cipherFormat: 'iana' }),
+      );
+      // The PQ-only comment is emitted inside [tls.options.modern]; assert
+      // its presence so a future refactor that drops the explanation trips.
+      const { default: assert } = await import('node:assert/strict');
+      assert.match(out, /PQ-only: Traefik currently only exposes the X25519MLKEM768/);
+    });
+  },
 });

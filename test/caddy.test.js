@@ -28,4 +28,21 @@ runStandardHelperSuite({
     'TLSv1.3': /\btls1\.3\b/,
   },
   hstsHeader: /header Strict-Transport-Security "max-age=63072000; includeSubDomains"/,
+  // Pre-2.0 Caddy emits the v1 EOL banner (lines 8-12); the PQ-only branch
+  // adds an explanatory comment (lines 41-45).
+  legacyVersions: [
+    { serverVersion: '1.0.5', label: 'pre-2.0 (v1 EOL banner)' },
+  ],
+  extraTests: (t) => {
+    t('PQ-only mode emits the X25519MLKEM768 explanatory comment', async () => {
+      const { default: caddyH } = await import('../src/js/helpers/caddy.js');
+      const { makeForm, makeOutput } = await import('./_helpers/fixtures.js');
+      const { default: assert } = await import('node:assert/strict');
+      const out = caddyH(
+        makeForm({ serverVersion: '2.8.4', config: 'modern', pq: 'only' }),
+        makeOutput('modern', { cipherFormat: 'iana' }),
+      );
+      assert.match(out, /PQ-only: Caddy currently only exposes the X25519MLKEM768 hybrid/);
+    });
+  },
 });

@@ -20,4 +20,12 @@ runStandardHelperSuite({
     intermediate: /ssl_min_protocol_version = 'TLSv1\.2'/,
     old:          /ssl_min_protocol_version = 'TLSv1'/,
   },
+  // Pre-12 omits ssl_min_protocol_version (lines 13-16); pre-10 omits
+  // ssl_dh_params_file (lines 28-33). Hit both branches for coverage.
+  legacyVersions: [
+    { serverVersion: '11.0', label: 'pre-12 (no ssl_min_protocol_version)' },
+    { serverVersion: '9.6',  label: 'pre-10 (no ssl_dh_params_file)' },
+    // Hit the v18+ ssl_groups branch even though configs.js still ships v17.
+    { serverVersion: '18.0', label: 'v18+ (ssl_groups branch)' },
+  ],
 });

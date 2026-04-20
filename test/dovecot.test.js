@@ -17,4 +17,10 @@ runStandardHelperSuite({
     intermediate: /ssl_min_protocol = TLSv1\.2\b/,
     old:          /ssl_min_protocol = TLSv1\b/,
   },
+  // Exercise pre-2.3 (ssl_protocols list, ssl_dh_parameters_length) and
+  // pre-2.4 (ssl_cert/ssl_key/ssl_prefer_server_ciphers) code paths.
+  legacyVersions: [
+    { serverVersion: '2.2.36', label: 'pre-2.3 (legacy ssl_protocols + dh_parameters_length)' },
+    { serverVersion: '2.3.21', label: '2.3.x (pre-2.4 cert directives)' },
+  ],
 });

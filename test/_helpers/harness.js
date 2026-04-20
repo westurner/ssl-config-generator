@@ -574,6 +574,54 @@ export function runStandardHelperSuite(opts) {
       `optOuts.curvesPresent:{ warning: /<your group line>/ }.`);
   });
 
+  // ----- 8. Legacy-version smoke (coverage of older code paths) -------------
+  // Many helpers fork heavily on `minver(...)` to support old server / openssl
+  // releases (e.g. lighttpd 1.4.46, postfix 3.4, haproxy 1.5, traefik 1.x,
+  // postgres 12). The default test invocation only exercises the latest
+  // stable, leaving those branches untested.
+  //
+  // For each entry in `legacyVersions`, render the helper across all three
+  // profiles × HSTS on/off × OCSP on/off and assert the same INVARIANTS that
+  // matter at any version: the rendered output is non-empty AND contains no
+  // forbidden primitives. We deliberately do NOT assert per-version protocol
+  // / cipher syntax — the alternate code paths intentionally use older
+  // syntaxes (e.g. `options = NO_TLSv1.1`, `tune.ssl.default-dh-param`) that
+  // wouldn't satisfy the same assertions as the current release.
+  //
+  // Schema:
+  //   legacyVersions: [
+  //     { serverVersion: '1.4.40', opensslVersion: '1.0.1', label: 'pre-1.4.46' },
+  //     ...
+  //   ]
+  // The optional `label` is just for human-readable test names.
+  const legacyVersions = opts.legacyVersions || [];
+  for (const lv of legacyVersions) {
+    const tag = lv.label || `serverVersion=${lv.serverVersion}`;
+    t(`legacy smoke (${tag}): no forbidden primitives across profiles × hsts × ocsp`, () => {
+      const overrides = { serverVersion: lv.serverVersion };
+      if (lv.opensslVersion) overrides.opensslVersion = lv.opensslVersion;
+      for (const profile of PROFILES) {
+        for (const hsts of [false, true]) {
+          for (const ocsp of [false, true]) {
+            const form = baseForm(Object.assign({ config: profile, hsts, ocsp }, overrides));
+            const raw  = helper(form, baseOutput(profile));
+            assert.ok(typeof raw === 'string' && raw.length > 0,
+              `legacy ${tag}: helper returned empty output for profile=${profile} hsts=${hsts} ocsp=${ocsp}`);
+            const out = _stripNegationTokens(raw);
+            for (const f of FORBIDDEN) {
+              assert.doesNotMatch(out, f.re,
+                `legacy ${tag}: forbidden token '${f.name}' (${f.re}) appeared for profile=${profile} hsts=${hsts} ocsp=${ocsp}`);
+            }
+            if (profile !== 'old') {
+              assert.doesNotMatch(out, TRIPLE_DES,
+                `legacy ${tag}: 3DES must not appear in profile=${profile}`);
+            }
+          }
+        }
+      }
+    });
+  }
+
   // ----- helper-specific extras ---------------------------------------------
   if (typeof opts.extraTests === 'function') {
     opts.extraTests(t);

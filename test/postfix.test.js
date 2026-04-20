@@ -20,4 +20,9 @@ runStandardHelperSuite({
   },
   // Postfix 3.6+ names only the floor protocol; per-version gating doesn't
   // apply. The harness will fall back to re-asserting protocolDirective.modern.
+  legacyVersions: [
+    // Pre-3.4 emits smtpd_tls_cert_file / smtpd_tls_key_file separately;
+    // pre-3.6 emits the !SSLv2/!SSLv3/!TLSv1.x negation list (lines 6-9).
+    { serverVersion: '3.3.0', label: 'pre-3.4 cert files + pre-3.6 negation list' },
+  ],
 });

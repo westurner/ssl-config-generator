@@ -20,4 +20,9 @@ runStandardHelperSuite({
     old:          /sslProtocol\s+30\b/,
   },
   hstsHeader: /Header Set Strict-Transport-Security: max-age=63072000; includeSubDomains/,
+  // Pre-1.4.35 emits the "may not support the following configurations"
+  // warning banner (lines 7-11).
+  legacyVersions: [
+    { serverVersion: '1.4.30', label: 'pre-1.4.35 (warning banner)' },
+  ],
 });
