@@ -79,29 +79,66 @@ All of the templates are written in javascript.  The configuration generator sup
 
 Highlighted items from src/js/state.js for use in templates.  See src/js/state.js for more.
 
+#### `form.*` (user input)
+
+- `form.server` - selected server key (e.g. `"nginx"`, `"caddy"`, `"python"`)
 - `form.serverName` - display name of the server
 - `form.serverVersion` - requested server version
 - `form.opensslVersion` - requested OpenSSL version
-- `form.config` - configuration name ([ "modern" | "intermediate" | "old" ])
-- `form.hsts` - HTTP Strict Transport Security form checkbox (boolean true/false)
-- `form.ocsp` - OCSP Stapling form checkbox (boolean true/false)
-- `output.header` - description of rendered config
+- `form.config` - configuration name (`"modern" | "intermediate" | "old"`)
+- `form.hsts` - HTTP Strict Transport Security form checkbox (boolean; gated by `output.supportsHsts`)
+- `form.ocsp` - OCSP Stapling form checkbox (boolean; gated by `output.supportsOcspStapling`)
+- `form.pq` - Post-Quantum mode (`"none"` = classical only, `"hybrid"` = hybrid PQ + classical, `"only"` = PQ groups only)
+- `form.version_tags` - HTML-escaped version string used in the header (e.g. `"nginx 1.27.0, OpenSSL 3.5.0, intermediate config, PQ: hybrid"`)
+
+#### `output.*` (derived state)
+
+General / metadata
+
+- `output.header` - description of rendered config (date, guideline version, version tags, HSTS/OCSP markers)
 - `output.link` - URL to rendered config
-- `output.protocols` - protocol list (e.g. zero or more of: "TLSv1" "TLSv1.1" "TLSv1.2" "TLSv1.3")
-- `output.ciphers` - TLSv1.2 (and older) cipher list
+- `output.fragment` - URL fragment portion of `output.link` (without leading `#`)
+- `output.origin` - origin of the generator URL (scheme + host)
+- `output.date` - ISO date (`YYYY-MM-DD`) the config was generated
+- `output.latestVersion` - server's latest known version (from `configs.js`)
+- `output.hasVersions` - server has multiple selectable versions (boolean)
+
+Protocols & ciphers
+
+- `output.protocols` - protocol list (zero or more of `"TLSv1"` `"TLSv1.1"` `"TLSv1.2"` `"TLSv1.3"`); forced to `["TLSv1.3"]` in PQ-only mode
+- `output.ciphers` - TLSv1.2 (and older) cipher list (OpenSSL or IANA names depending on the server's `cipherFormat`)
 - `output.cipherSuites` - TLSv1.3+ cipher suites list
-- `output.serverPreferredOrder` - enforce ServerPreference for ordering cipher list (boolean true/false)
-- `output.hstsMaxAge` - max-age (seconds) for Strict-Transport-Security: max-age=... HTTP response header
-- `output.hstsRedirectCode` - HTTP status code to use for HSTS redirect from http:// to https://
-- `output.latestVersion` - server latest version
-- `output.usesOpenssl` - server uses openssl (boolean true/false)
-- `output.usesDhe` - server might use (<= TLSv1.2 kDHE) Diffie-Hellmann key exchange (boolean true/false)
-- `output.dhCommand` - command to generate Diffie-Hellman (DH) parameters
-- `output.hasVersions` - config supports several server versions (boolean true/false)
-- `output.supportsHsts` - supports HTTP Strict Transport Security (HSTS) (boolean true/false)
-- `output.supportsOcspStapling` - server version supporting OCSP Stapling in config
-- `output.tls13` - server version supporting TLSv1.3
-- `output.tlsCurves` - groups/curves list
+- `output.serverPreferredOrder` - enforce ServerPreference for ordering cipher list (boolean)
+- `output.tlsCurves` - groups/curves list, filtered by the selected PQ mode
+- `output.pqMode` - same value as `form.pq`, exposed for use in templates
+
+HSTS / OCSP
+
+- `output.hstsMaxAge` - `max-age` (seconds) for the `Strict-Transport-Security` HTTP response header
+- `output.hstsRedirectCode` - HTTP status code to use for HSTS redirect from `http://` to `https://`
+
+Diffie-Hellman
+
+- `output.usesDhe` - server might use (≤ TLSv1.2 kDHE) Diffie-Hellman key exchange (boolean)
+- `output.dhCommand` - command to fetch RFC 7919 Diffie-Hellman parameters
+- `output.dhParamSize` - DH parameter size in bits (e.g. `2048`)
+
+OpenSSL
+
+- `output.usesOpenssl` - server uses OpenSSL (boolean)
+
+Capability flags (`supports*`) — sourced from `src/js/configs.js` and used by templates and tests to gate sections, banners, and assertions:
+
+- `output.showSupports` - emit the "supports …" footer block describing OS / library prerequisites (boolean; default `true`)
+- `output.supportsHsts` - server can emit HSTS headers (boolean; default `true`)
+- `output.supportsOcspStapling` - server version (per `configs.js` minimum) supports OCSP Stapling (boolean; falsy when the running version predates support)
+- `output.supportsCipherSelection` - server lets the user pin TLS ≤ 1.2 cipher suites (boolean; default `true`)
+- `output.supportsCurveSelection` - server lets the user pin key-exchange groups/curves (boolean; default `true`)
+- `output.supportsPq` - server has been declared PQ-aware in `configs.js` (boolean; default `false`, opt-in only). When `true`, the test harness asserts the helper emits an `MLKEM` token or PQ-related comment.
+
+Other
+
+- `output.oldestClients` - human-readable list of oldest interoperable clients (from the Mozilla guideline)
 
 ### Requested but not yet added new software support
 
