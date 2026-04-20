@@ -17,12 +17,15 @@ export const PROFILES = ['modern', 'intermediate', 'old'];
 // to exercise PQ codepaths construct fixtures via:
 //   makeForm({ pq: 'only' })
 //   makeOutput(profile, { pqMode: 'only', supportsPq: true })
-// The 'only' / 'mixed' / 'none' values match what state.js writes onto
-// output.pqMode (state.js:206) and form.pq (state.js:183). PQ_GROUPS lists
-// the IANA-assigned hybrid ML-KEM codepoints that helpers with a PQ
-// codepath are expected to surface (as group tokens, comments, or both)
-// when output.supportsPq is true.
-export const PQ_MODES = ['none', 'mixed', 'only'];
+// The 'none' / 'hybrid' / 'only' values match what state.js writes onto
+// output.pqMode (state.js:206) and form.pq (state.js:183) — and what the
+// HTML form posts (templates/index.ejs:139, value="hybrid"). 'hybrid' is
+// the standard PQ-TLS term (NIST FIPS 203, draft-ietf-tls-hybrid-design,
+// draft-kwiatkowski-tls-ecdhe-mlkem); helpers MUST use the same spelling.
+// PQ_GROUPS lists the IANA-assigned hybrid ML-KEM codepoints that helpers
+// with a PQ codepath are expected to surface (as group tokens, comments,
+// or both) when output.supportsPq is true.
+export const PQ_MODES = ['none', 'hybrid', 'only'];
 export const PQ_GROUPS = ['X25519MLKEM768', 'SecP256r1MLKEM768', 'SecP384r1MLKEM1024'];
 
 // Per-profile snapshot of guideline 5.7. Embedded inline (rather than read at

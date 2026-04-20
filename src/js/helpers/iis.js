@@ -236,7 +236,7 @@ export default (form, output) => {
     droppedCiphers.forEach(c => { conf += '#   - '+c+'\n'; });
   }
 
-  if (form && (form.pq === 'only' || (form.pq === 'mixed' && hasPqGroup))) {
+  if (form && (form.pq === 'only' || (form.pq === 'hybrid' && hasPqGroup))) {
     conf +=
       '#\n'+
       '# PQ '+(form.pq === 'only' ? 'ONLY' : 'HYBRID')+' mode: this profile includes the X25519MLKEM768\n'+
