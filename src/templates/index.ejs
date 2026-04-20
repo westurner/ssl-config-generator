@@ -231,9 +231,9 @@
               <td><%= c.tls13 || '—' %></td>
               <td><%= yesNo(c.usesOpenssl, true) %></td>
               <td><code><%= c.cipherFormat || 'openssl' %></code></td>
-              <td><%= yesNo(c.supportsCipherSelection, true) %></td>
-              <td><%= yesNo(c.supportsCurveSelection, true) %></td>
-              <td><%= yesNo(c.supportsHsts, true) %></td>
+              <td><%= versionOr(c.supportsCipherSelection, true) %></td>
+              <td><%= versionOr(c.supportsCurveSelection, true) %></td>
+              <td><%= versionOr(c.supportsHsts, true) %></td>
               <td><%= versionOr(c.supportsOcspStapling, false) %></td>
               <td><%= versionOr(c.supportsPq, false) %></td>
             </tr>
