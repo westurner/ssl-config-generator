@@ -1,5 +1,5 @@
 // generated 1970-01-01, Mozilla Guideline v5.7, Go 1.23.3, intermediate config, PQ: none
-// https://ssl-config.mozilla.org/#server=go&version=1.23.3&config=intermediate&guideline=5.7&pq=none
+// https://ssl-config.mozilla.org/#server=go&version=1.23.3&config=intermediate&guideline=5.7&hsts=false&ocsp=false&pq=none
 package main
 
 import (

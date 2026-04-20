@@ -117,15 +117,18 @@ function parseArgs(argv) {
   return o;
 }
 
-// Build the URL fragment exactly as src/js/state.js does
-// (state.js: `server=…&version=…&config=…[&openssl=…][&hsts][&ocsp]&guideline=…[&pq=…]`).
+// Build the URL fragment exactly as src/js/render.js does
+// (every axis is emitted as an explicit key=value pair so the URL is
+// self-describing and round-trips through URLSearchParams).
 function buildFragment(o) {
   let f = `server=${o.server}&version=${o.version}&config=${o.config}`;
   if (configs[o.server].usesOpenssl !== false) f += `&openssl=${o.openssl}`;
-  if (configs[o.server].supportsHsts !== false && o.hsts) f += '&hsts';
-  if (configs[o.server].supportsOcspStapling && o.ocsp) f += '&ocsp';
   f += `&guideline=${o.guideline}`;
-  if (o.pq !== 'hybrid') f += `&pq=${o.pq}`;
+  const hstsOn = configs[o.server].supportsHsts !== false && !!o.hsts;
+  const ocspOn = !!configs[o.server].supportsOcspStapling && !!o.ocsp;
+  f += `&hsts=${hstsOn ? 'true' : 'false'}`;
+  f += `&ocsp=${ocspOn ? 'true' : 'false'}`;
+  f += `&pq=${o.pq}`;
   return f;
 }
 

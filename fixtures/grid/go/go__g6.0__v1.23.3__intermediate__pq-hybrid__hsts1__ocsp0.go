@@ -1,5 +1,5 @@
 // generated 1970-01-01, Mozilla Guideline v6.0, Go 1.23.3, intermediate config, PQ: hybrid, HSTS
-// https://ssl-config.mozilla.org/#server=go&version=1.23.3&config=intermediate&hsts&guideline=6.0
+// https://ssl-config.mozilla.org/#server=go&version=1.23.3&config=intermediate&guideline=6.0&hsts=true&ocsp=false&pq=hybrid
 package main
 
 import (

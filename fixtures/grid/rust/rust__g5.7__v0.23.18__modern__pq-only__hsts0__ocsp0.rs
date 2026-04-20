@@ -1,5 +1,5 @@
 // generated 1970-01-01, Mozilla Guideline v5.7, Rust (rustls) 0.23.18, modern config, PQ: only
-// https://ssl-config.mozilla.org/#server=rust&version=0.23.18&config=modern&guideline=5.7&pq=only
+// https://ssl-config.mozilla.org/#server=rust&version=0.23.18&config=modern&guideline=5.7&hsts=false&ocsp=false&pq=only
 //
 // Cargo.toml:
 //     [dependencies]

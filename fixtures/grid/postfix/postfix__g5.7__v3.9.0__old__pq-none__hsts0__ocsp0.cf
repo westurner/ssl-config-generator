@@ -1,5 +1,5 @@
 # generated 1970-01-01, Mozilla Guideline v5.7, Postfix 3.9.0, OpenSSL 3.6.1, old config, PQ: none
-# https://ssl-config.mozilla.org/#server=postfix&version=3.9.0&config=old&openssl=3.6.1&guideline=5.7&pq=none
+# https://ssl-config.mozilla.org/#server=postfix&version=3.9.0&config=old&openssl=3.6.1&guideline=5.7&hsts=false&ocsp=false&pq=none
 smtpd_tls_auth_only = yes
 smtpd_tls_chain_files =
   /path/to/private_key,

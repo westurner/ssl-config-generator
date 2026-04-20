@@ -1,5 +1,5 @@
 // generated 1970-01-01, Mozilla Guideline v6.0, Go 1.23.3, modern config, PQ: none, HSTS
-// https://ssl-config.mozilla.org/#server=go&version=1.23.3&config=modern&hsts&guideline=6.0&pq=none
+// https://ssl-config.mozilla.org/#server=go&version=1.23.3&config=modern&guideline=6.0&hsts=true&ocsp=false&pq=none
 package main
 
 import (

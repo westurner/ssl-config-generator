@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Mozilla ELB configuration generated 1970-01-01, https://ssl-config.mozilla.org/#server=awselb&version=2014.2.19&config=intermediate&guideline=5.7&pq=none
+Description: Mozilla ELB configuration generated 1970-01-01, https://ssl-config.mozilla.org/#server=awselb&version=2014.2.19&config=intermediate&guideline=5.7&hsts=false&ocsp=false&pq=none
 Parameters:
   SSLCertificateId:
     Description: The ARN of the ACM SSL certificate to use

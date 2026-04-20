@@ -1,5 +1,5 @@
 /* generated 1970-01-01, Mozilla Guideline v6.0, s2n-tls 1.7.2, intermediate config, PQ: none */
-/* https://ssl-config.mozilla.org/#server=s2n&version=1.7.2&config=intermediate&guideline=6.0&pq=none */
+/* https://ssl-config.mozilla.org/#server=s2n&version=1.7.2&config=intermediate&guideline=6.0&hsts=false&ocsp=false&pq=none */
 /*
  * s2n-tls is a C library; this snippet is meant to be embedded in
  * your application. Build with:
