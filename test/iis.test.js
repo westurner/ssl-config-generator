@@ -408,7 +408,7 @@ runStandardHelperSuite({
             // Hybrid — both MLKEM and classical curve25519 must appear.
             const ec = out.match(/Name\s*=\s*'EccCurves'[^\n]*Value\s*=\s*@\(([^)]*)\)/);
             assert.ok(/'MLKEM768X25519'/.test(ec[1]) && /'curve25519'/.test(ec[1]),
-              `mode=mixed EccCurves should contain both MLKEM and classical; got: ${ec[1]}`);
+              `mode=hybrid EccCurves should contain both MLKEM and classical; got: ${ec[1]}`);
           }
         }
       });
@@ -442,7 +442,7 @@ const SKIP_REASON = 'pwsh not available on PATH';
 
 test('iis: rendered PowerShell parses cleanly with the pwsh AST parser', { skip: PWSH ? false : SKIP_REASON }, () => {
   const out = iis(
-    makeForm({ serverVersion: '10.0.26100', config: 'intermediate', hsts: true, pq: 'mixed' }),
+    makeForm({ serverVersion: '10.0.26100', config: 'intermediate', hsts: true, pq: 'hybrid' }),
     makeOutput('intermediate', { cipherFormat: 'iana', supportsPq: true,
       tlsCurves: ['X25519MLKEM768', 'X25519', 'prime256v1', 'secp384r1'] }),
   );

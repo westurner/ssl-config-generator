@@ -93,31 +93,27 @@ test('openldap: emits TLSDHParamFile only when usesDhe is true', () => {
 
 test('openldap: PQ-mode comments are emitted only when form.pq !== "none"', () => {
   for (const mode of PQ_MODES) {
-    // PQ_MODES is ['none', 'mixed', 'only']; the helper accepts 'none' /
-    // 'hybrid' / 'only' (matching state.js form.pq), so map 'mixed' onto
-    // 'hybrid' for this surface.
-    const formMode = mode === 'mixed' ? 'hybrid' : mode;
     const out = openldap(
-      makeForm({ pq: formMode }),
+      makeForm({ pq: mode }),
       makeOutput('intermediate', {
-        tlsCurves: formMode === 'only'
+        tlsCurves: mode === 'only'
           ? ['X25519MLKEM768']
           : ['X25519MLKEM768', 'X25519', 'prime256v1', 'secp384r1'],
       }),
     );
-    if (formMode === 'none') {
+    if (mode === 'none') {
       assert.doesNotMatch(out, /Post-quantum:/);
       assert.doesNotMatch(out, /classical curves are intentionally omitted/);
     }
     else {
-      assert.match(out, /Post-quantum:/, `pq=${formMode} should mention PQ`);
+      assert.match(out, /Post-quantum:/, `pq=${mode} should mention PQ`);
     }
-    if (formMode === 'only') {
+    if (mode === 'only') {
       assert.match(out, /classical curves are intentionally omitted/);
       // PQ-only must explicitly call out the TLS 1.3 floor requirement.
       assert.match(out, /TLSProtocolMin is pinned to 3\.4/);
     }
-    if (formMode === 'hybrid') {
+    if (mode === 'hybrid') {
       assert.match(out, /Hybrid PQ mode/);
     }
   }
