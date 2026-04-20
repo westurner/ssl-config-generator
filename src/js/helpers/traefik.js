@@ -56,10 +56,15 @@ export default (form, output) => {
       '    scheme = "https"\n'+
       '  [http.middlewares.hsts-header.headers]\n'+
       '    stsSeconds = '+output.hstsMaxAge+'\n'+
-      '    # Depending on your configuration you might want to also enable "includeSubDomains"\n'+
-      '    # and "preload". More infos about these directives can be found at\n'+
+      // Mozilla guideline (and every other helper here) emits HSTS with
+      // includeSubDomains when the user opts in via form.hsts. Traefik\'s
+      // stsIncludeSubdomains has been a documented Headers-middleware
+      // option since 2.0 (pkg/middlewares/headers/secure.go), so we
+      // emit it uncommented to match the standard guideline behavior.
+      '    stsIncludeSubdomains = true\n'+
+      '    # stsPreload requires registering on https://hstspreload.org/\n'+
+      '    # before enabling — see\n'+
       '    # https://infosec.mozilla.org/guidelines/web_security#http-strict-transport-security\n'+
-      '    #stsIncludeSubdomains = true\n'+
       '    #stsPreload = true\n';
   }
 
