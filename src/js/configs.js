@@ -137,6 +137,21 @@ module.exports = {
     name: 'HAProxy',
     tls13: '1.8.0',
   },
+  iis: {
+    cipherFormat: 'iana',
+    latestVersion: '10.0.26100', // Windows Server 2025 / Win 11 24H2
+    eolBefore: '10.0.17763',     // pre-Server 2019 builds are unsupported
+    name: 'IIS (PowerShell)',
+    supportsPq: true,
+    tls13: '10.0.20348',         // Server 2022 / Win 11; first Schannel build with TLS 1.3 enabled by default
+    usesOpenssl: false,
+    // IIS uses Schannel (not OpenSSL). The helper emits a PowerShell script
+    // that backs up the existing SCHANNEL/cipher-policy registry keys to a
+    // .reg file via `reg.exe export` and supports a `-Restore` switch to
+    // re-import the backup. Hybrid PQ key exchange (X25519MLKEM768, named
+    // `MLKEM768X25519` in Schannel) is available on Windows Server 2025 /
+    // Windows 11 24H2 preview builds; the script surfaces it for `pq=only`.
+  },
   jetty: {
     cipherFormat: 'iana',
     latestVersion: '12.0.15',
