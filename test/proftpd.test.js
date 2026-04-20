@@ -2,7 +2,7 @@
 //
 // ProFTPD's TLSProtocol directive lists each enabled version
 // (TLSProtocol TLSv1.2 TLSv1.3). It's an FTP server with no HSTS notion.
-import { runStandardHelperSuite } from './_helpers/harness.js';
+import { runStandardHelperSuite, BARE_TLSV1 } from './_helpers/harness.js';
 import proftpd from '../src/js/helpers/proftpd.js';
 
 runStandardHelperSuite({
@@ -21,6 +21,6 @@ runStandardHelperSuite({
     'TLSv1.3': /\bTLSv1\.3\b/,
     'TLSv1.2': /\bTLSv1\.2\b/,
     'TLSv1.1': /\bTLSv1\.1\b/,
-    'TLSv1':   /\bTLSv1(?![.\d])/,
+    'TLSv1':   BARE_TLSV1,
   },
 });

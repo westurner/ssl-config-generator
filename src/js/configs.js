@@ -1,5 +1,17 @@
 // configs for the supported pieces of software
 // hasVersions, showSupports, supportsHsts, and usesOpenssl only need to be defined if false
+// supportsCipherSelection and supportsCurveSelection are assumed `true` unless defined otherwise.
+//   - supportsCipherSelection:false  → the helper cannot emit a per-cipher list
+//                                      (e.g. AWS ALB / s2n-tls expose only named
+//                                      "policy" identifiers).
+//   - supportsCurveSelection:false   → the helper cannot express a TLS named-group
+//                                      / curve preference (e.g. MySQL, Tomcat,
+//                                      Jetty, Redis, Squid, AWS ELB/ALB, s2n-tls,
+//                                      rustls, the LiteSpeed family, Coturn,
+//                                      OracleHTTP).
+//   These two attributes drive the test harness's "ciphers/curves are present"
+//   assertions; setting them false is also the documented contract that the
+//   generator UI can use to grey-out PQ-group / cipher selection knobs.
 // cipherFormat is assumed to be 'openssl' unless defined otherwise
 
 
@@ -16,6 +28,8 @@ module.exports = {
     latestVersion: '2023.3.22',
     name: 'AWS ALB',
     showSupports: false,
+    supportsCipherSelection: false,
+    supportsCurveSelection: false,
     supportsOcspStapling: false,
     tls13: '2023.3.22',
     usesOpenssl: false,
@@ -27,6 +41,7 @@ module.exports = {
     latestVersion: '2014.2.19',
     name: 'AWS ELB',
     supportedCiphers: ['ECDHE-ECDSA-AES128-GCM-SHA256', 'ECDHE-RSA-AES128-GCM-SHA256', 'ECDHE-ECDSA-AES128-SHA256', 'ECDHE-RSA-AES128-SHA256', 'ECDHE-ECDSA-AES128-SHA', 'ECDHE-RSA-AES128-SHA', 'DHE-RSA-AES128-SHA', 'ECDHE-ECDSA-AES256-GCM-SHA384', 'ECDHE-RSA-AES256-GCM-SHA384', 'ECDHE-ECDSA-AES256-SHA384', 'ECDHE-RSA-AES256-SHA384', 'ECDHE-RSA-AES256-SHA', 'ECDHE-ECDSA-AES256-SHA', 'AES128-GCM-SHA256', 'AES128-SHA256', 'AES128-SHA', 'AES256-GCM-SHA384', 'AES256-SHA256', 'AES256-SHA', 'DHE-DSS-AES128-SHA', 'CAMELLIA128-SHA', 'EDH-RSA-DES-CBC3-SHA', 'DES-CBC3-SHA', 'ECDHE-RSA-RC4-SHA', 'RC4-SHA', 'ECDHE-ECDSA-RC4-SHA', 'DHE-DSS-AES256-GCM-SHA384', 'DHE-RSA-AES256-GCM-SHA384', 'DHE-RSA-AES256-SHA256', 'DHE-DSS-AES256-SHA256', 'DHE-RSA-AES256-SHA', 'DHE-DSS-AES256-SHA', 'DHE-RSA-CAMELLIA256-SHA', 'DHE-DSS-CAMELLIA256-SHA', 'CAMELLIA256-SHA', 'EDH-DSS-DES-CBC3-SHA', 'DHE-DSS-AES128-GCM-SHA256', 'DHE-RSA-AES128-GCM-SHA256', 'DHE-RSA-AES128-SHA256', 'DHE-DSS-AES128-SHA256', 'DHE-RSA-CAMELLIA128-SHA', 'DHE-DSS-CAMELLIA128-SHA', 'ADH-AES128-GCM-SHA256', 'ADH-AES128-SHA', 'ADH-AES128-SHA256', 'ADH-AES256-GCM-SHA384', 'ADH-AES256-SHA', 'ADH-AES256-SHA256', 'ADH-CAMELLIA128-SHA', 'ADH-CAMELLIA256-SHA', 'ADH-DES-CBC3-SHA', 'ADH-DES-CBC-SHA', 'ADH-RC4-MD5', 'ADH-SEED-SHA', 'DES-CBC-SHA', 'DHE-DSS-SEED-SHA', 'DHE-RSA-SEED-SHA', 'EDH-DSS-DES-CBC-SHA', 'EDH-RSA-DES-CBC-SHA', 'IDEA-CBC-SHA', 'RC4-MD5', 'SEED-SHA', 'DES-CBC3-MD5', 'DES-CBC-MD5', 'RC2-CBC-MD5', 'PSK-AES256-CBC-SHA', 'PSK-3DES-EDE-CBC-SHA', 'KRB5-DES-CBC3-SHA', 'KRB5-DES-CBC3-MD5', 'PSK-AES128-CBC-SHA', 'PSK-RC4-SHA', 'KRB5-RC4-SHA', 'KRB5-RC4-MD5', 'KRB5-DES-CBC-SHA', 'KRB5-DES-CBC-MD5', 'EXP-EDH-RSA-DES-CBC-SHA', 'EXP-EDH-DSS-DES-CBC-SHA', 'EXP-ADH-DES-CBC-SHA', 'EXP-DES-CBC-SHA', 'EXP-RC2-CBC-MD5', 'EXP-KRB5-RC2-CBC-SHA', 'EXP-KRB5-DES-CBC-SHA', 'EXP-KRB5-RC2-CBC-MD5', 'EXP-KRB5-DES-CBC-MD5', 'EXP-ADH-RC4-MD5', 'EXP-RC4-MD5', 'EXP-KRB5-RC4-SHA', 'EXP-KRB5-RC4-MD5'],
+    supportsCurveSelection: false,
     supportsHsts: false,
     usesOpenssl: false,
   },
@@ -42,6 +57,7 @@ module.exports = {
     latestVersion: '4.6.2',
     name: 'Coturn',
     showSupports: false,
+    supportsCurveSelection: false,
     supportsHsts: false,
     tls13: '4.6.2',
   },
@@ -91,6 +107,7 @@ module.exports = {
     latestVersion: '12.0.15',
     eolBefore: '12.0.0',
     name: 'Jetty',
+    supportsCurveSelection: false,
     supportsHsts: false,
     tls13: '9.4.12',
     usesOpenssl: false,
@@ -106,6 +123,7 @@ module.exports = {
     latestVersion: '6.3.5',
     eolBefore: '5.4.12',
     name: 'LiteSpeed',
+    supportsCurveSelection: false,
     supportsOcspStapling: '1.2',
     tls13: '5.4.12',
   },
@@ -114,6 +132,7 @@ module.exports = {
     eolBefore: '8.0.0',
     name: 'MySQL',
     showSupports: false,
+    supportsCurveSelection: false,
     supportsHsts: false,
     tls13: '8.0.16',
   },
@@ -143,6 +162,7 @@ module.exports = {
     latestVersion: '1.8.5',
     eolBefore: '1.4.35',
     name: 'OpenLiteSpeed',
+    supportsCurveSelection: false,
     supportsOcspStapling: '1.2',
     tls13: '1.4.35',
   },
@@ -150,6 +170,7 @@ module.exports = {
     cipherFormat: 'iana',
     latestVersion: '12.2.1',
     name: 'Oracle HTTP',
+    supportsCurveSelection: false,
     usesOpenssl: false,
   },
   postfix: {
@@ -182,6 +203,7 @@ module.exports = {
     eolBefore: '7.4.0',
     name: 'Redis',
     showSupports: false,
+    supportsCurveSelection: false,
     supportsHsts: false,
     tls13: '6.0',
   },
@@ -191,6 +213,7 @@ module.exports = {
     eolBefore: '0.23.0',
     name: 'Rust (rustls)',
     showSupports: false,
+    supportsCurveSelection: false,
     supportsHsts: false,
     tls13: '0.20.0',
     usesOpenssl: false,
@@ -201,6 +224,8 @@ module.exports = {
     eolBefore: '1.5.0',
     name: 's2n-tls',
     showSupports: false,
+    supportsCipherSelection: false,
+    supportsCurveSelection: false,
     supportsHsts: false,
     // s2n_config_set_status_request_type(config, S2N_STATUS_REQUEST_OCSP) has
     // been part of the public API since the very first releases.
@@ -219,6 +244,7 @@ module.exports = {
     eolBefore: '6.0',
     name: 'Squid',
     showSupports: false,
+    supportsCurveSelection: false,
     supportsHsts: false,
     tls13: '4',
   },
@@ -232,6 +258,7 @@ module.exports = {
     latestVersion: '11.0.1',
     eolBefore: '9.0.0',
     name: 'Tomcat',
+    supportsCurveSelection: false,
     tls13: '8.0.0',
     usesOpenssl: false,
   },

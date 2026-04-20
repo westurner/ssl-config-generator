@@ -23,5 +23,12 @@ runStandardHelperSuite({
   },
   // Traefik names only the minimum version. Skip per-version gating (the
   // harness will re-check protocolDirective.modern instead).
+  // Traefik renders only `stsSeconds`; `stsIncludeSubdomains` is left
+  // commented for the operator to opt in per-domain. The harness's default
+  // `; includeSubDomains` requirement is therefore opted out here, but we
+  // still assert the helper documents the omission via its own comment.
   hstsHeader: /stsSeconds = 63072000/,
+  optOuts: {
+    hstsIncludeSubDomains: { warning: /you might want to also enable "includeSubDomains"/ },
+  },
 });

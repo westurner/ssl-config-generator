@@ -13,6 +13,7 @@ runStandardHelperSuite({
   helper: litespeed,
   serverVersion: '6.3.5',
   supportsHsts: true,
+  supportsCurveSelection: false,  // configs.js: LiteSpeed has no curve-preference directive
   cipherFormat: 'openssl',
   protocolDirective: {
     modern:       /<sslProtocol>16<\/sslProtocol>/,

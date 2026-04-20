@@ -15,6 +15,7 @@ runStandardHelperSuite({
   helper: awsalb,
   serverVersion: '2023.3.22',
   supportsHsts: true,        // matches configs.js default
+  supportsCurveSelection: false,  // configs.js: AWS ALB exposes only managed policy names
   cipherFormat: 'openssl',   // not actually used (cipherSyntax is opted out)
   formOverrides: { serverName: 'AWS ALB' },
   protocolDirective: {

@@ -13,6 +13,7 @@ runStandardHelperSuite({
   helper: awselb,
   serverVersion: '2014.2.19',
   supportsHsts: false,
+  supportsCurveSelection: false,    // configs.js: AWS ELB doesn't expose curve preference
   cipherFormat: 'openssl',
   protocolDirective: {
     modern:       /Name: Protocol-TLSv1\.3\b/,

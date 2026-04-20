@@ -169,7 +169,20 @@ export function makeOutput(profile, { cipherFormat = 'openssl', ...overrides } =
     dhCommand: 'curl https://example.invalid/ffdhe' +
       (data.dhParamSize || 2048) + '.txt',
     dhParamSize: data.dhParamSize,
-    usesDhe: data.ciphers.openssl.some((c) => c.includes('DHE-')),
+    // Mirror state.js:214 — only true DHE-/_DHE_ tokens count, not ECDHE.
+    // The `:`/`_` boundary check excludes substring matches inside ECDHE-
+    // and TLS_ECDHE_… cipher names.
+    usesDhe: data.ciphers.openssl.join(':').includes(':DHE-')
+          || data.ciphers.openssl.join(':').startsWith('DHE-')
+          || data.ciphers.iana.join(':').includes('_DHE_'),
+
+    // Per-helper capability flags (configs.js / state.js). Tests overriding
+    // these can opt out of curve / cipher presence assertions in the harness
+    // for helpers that legitimately cannot express either knob (e.g. AWS ALB,
+    // s2n-tls). Defaults match configs.js: every helper supports both unless
+    // it has explicitly opted out.
+    supportsCipherSelection: true,
+    supportsCurveSelection: true,
 
     pqMode: 'none',
   }, overrides);

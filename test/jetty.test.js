@@ -14,6 +14,7 @@ runStandardHelperSuite({
   helper: jetty,
   serverVersion: '12.0.15',
   supportsHsts: false,
+  supportsCurveSelection: false,  // configs.js: Jetty SslContextFactory has no curve API
   cipherFormat: 'iana',
   // Strip XML comments before the protocol-gating check.
   commentLine: /<!--[\s\S]*?-->/g,

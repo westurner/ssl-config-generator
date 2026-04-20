@@ -1,5 +1,5 @@
 // nginx helper — generic-suite tests via the shared harness.
-import { runStandardHelperSuite } from './_helpers/harness.js';
+import { runStandardHelperSuite, BARE_TLSV1 } from './_helpers/harness.js';
 import nginx from '../src/js/helpers/nginx.js';
 
 runStandardHelperSuite({
@@ -18,7 +18,7 @@ runStandardHelperSuite({
     'TLSv1.2': /\bTLSv1\.2\b/,
     'TLSv1.1': /\bTLSv1\.1\b/,
     // bare TLSv1, not followed by a dotted-decimal extension
-    'TLSv1':   /\bTLSv1(?![.\d])/,
+    'TLSv1':   BARE_TLSV1,
   },
   hstsHeader: /add_header Strict-Transport-Security "max-age=63072000; includeSubDomains"/,
 });

@@ -12,6 +12,7 @@ runStandardHelperSuite({
   helper: openlitespeed,
   serverVersion: '1.8.5',
   supportsHsts: true,
+  supportsCurveSelection: false,  // configs.js: OpenLiteSpeed has no curve-preference directive
   cipherFormat: 'openssl',
   protocolDirective: {
     modern:       /sslProtocol\s+16\b/,

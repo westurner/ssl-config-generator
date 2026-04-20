@@ -11,6 +11,7 @@ runStandardHelperSuite({
   helper: oraclehttp,
   serverVersion: '12.2.1',
   supportsHsts: true,
+  supportsCurveSelection: false,  // configs.js: Oracle HTTP template doesn't render curves
   cipherFormat: 'iana',
   protocolDirective: {
     modern:       /SSLProtocol\s+-all \+TLSv1\.3\n/,
