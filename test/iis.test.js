@@ -85,7 +85,129 @@ runStandardHelperSuite({
         'reg.exe invocations should be gone from executable PowerShell (only doc-comments may mention it)');
     });
 
-    // ---- L1: ProgramData-rooted backup directory + ACL --------------------
+    // ---- File-ACL hardening (follow-up requirement) -----------------------
+    t('do.json + undo.json files are pre-created with strict ACL BEFORE Set-Content writes any data', () => {
+      const out = iis(
+        makeForm({ serverVersion: '10.0.26100' }),
+        makeOutput('intermediate', { cipherFormat: 'iana' }),
+      );
+      // Helpers are defined.
+      assert.match(out, /function Protect-File/);
+      assert.match(out, /function New-ProtectedFile/);
+      assert.match(out, /function New-AdminOnlyAcl/);
+      // The order MUST be: New-ProtectedFile (creates empty + ACLs) BEFORE
+      // Set-Content (writes the snapshot data into the already-protected
+      // file). The previous order (Set-Content -> Protect-File) created
+      // the file with the parent dir's inherited ACL — fine for the
+      // %ProgramData% default, but a leak for caller-supplied -BackupPath
+      // pointing into a permissive parent directory.
+      assert.match(out,
+        /New-ProtectedFile -Path \("\$\{BackupPath\}\.do\.json"\)[\s\S]*?Set-Content -LiteralPath \("\$\{BackupPath\}\.do\.json"\)/,
+        'do.json must be New-ProtectedFile then Set-Content');
+      assert.match(out,
+        /New-ProtectedFile -Path \("\$\{BackupPath\}\.undo\.json"\)[\s\S]*?Set-Content -LiteralPath \("\$\{BackupPath\}\.undo\.json"\)/,
+        'undo.json must be New-ProtectedFile then Set-Content');
+      // New-ProtectedFile uses FileMode::CreateNew (atomic create-or-fail)
+      // to defeat a TOCTOU race where an attacker plants a symlink.
+      assert.match(out, /\[System\.IO\.FileMode\]::CreateNew/);
+      // It also tightens the ACL while the file is still empty.
+      assert.match(out, /Set-Acl -Path \$Path -AclObject \(New-AdminOnlyAcl -Kind File\)/);
+      // Both helpers refuse reparse points (defence against attacker-planted symlinks).
+      assert.match(out, /Protect-File: refusing to ACL a reparse point/);
+      assert.match(out, /New-ProtectedFile: \$Path exists and is a reparse point\/symlink; refusing to use it/);
+    });
+
+    t('Initialize-BackupDirectory ALWAYS (re-)applies the ACL and refuses reparse points / non-directories', () => {
+      const out = iis(
+        makeForm({ serverVersion: '10.0.26100' }),
+        makeOutput('intermediate', { cipherFormat: 'iana' }),
+      );
+      // The fix: Set-Acl must run on the directory whether or not it pre-existed
+      // (the previous version skipped Set-Acl on a pre-existing dir, leaving a
+      // loosely-permissioned %ProgramData%\Mozilla-SSLConfigGenerator if one
+      // existed).
+      assert.match(out,
+        /function Initialize-BackupDirectory[\s\S]*?Set-Acl -Path \$Path -AclObject \(New-AdminOnlyAcl -Kind Directory\)/);
+      // Reject non-directories and reparse points at the chosen path.
+      assert.match(out, /not a directory/);
+      assert.match(out, /reparse point\/junction; refusing to use it/);
+    });
+
+    // ---- -JsonToReg (follow-up requirement) -------------------------------
+    t('exposes a -JsonToReg parameter that converts a do/undo JSON snapshot into a .reg file', () => {
+      const out = iis(
+        makeForm({ serverVersion: '10.0.26100' }),
+        makeOutput('intermediate', { cipherFormat: 'iana' }),
+      );
+      // Param block declares both the input JSON path and the output .reg path.
+      assert.match(out, /\[string\]\$JsonToReg/);
+      assert.match(out, /\[string\]\$RegOut/);
+      // The branch runs ahead of the elevation check (read-only path).
+      const idxAdminGate = out.search(/if \(-not \$JsonToReg\) \{[^}]*IsInRole/);
+      assert.ok(idxAdminGate >= 0,
+        'Administrator gate must be wrapped in `if (-not $JsonToReg)` so non-admins can convert JSON->reg');
+      // Branch dispatch + early return. Order MUST be: New-ProtectedFile
+      // (creates empty + ACLs) BEFORE ConvertFrom-DoUndoJsonToReg (writes
+      // the .reg payload via Truncate into the already-protected file).
+      assert.match(out, /if \(\$JsonToReg\) \{[\s\S]*New-ProtectedFile -Path \$RegOut[\s\S]*ConvertFrom-DoUndoJsonToReg[\s\S]*return\s*\n\s*\}/);
+      // Helper function declarations.
+      assert.match(out, /function ConvertTo-RegStringLiteral/);
+      assert.match(out, /function ConvertTo-RegMultiStringHex/);
+      assert.match(out, /function ConvertFrom-DoUndoJsonToReg/);
+      // .reg v5 header is emitted.
+      assert.match(out, /Windows Registry Editor Version 5\.00/);
+      // Default $RegOut strips .do/.undo infix from the source name.
+      assert.match(out, /\$RegOut = \$RegOut -replace\s+'\\\.\(do\|undo\)\\\.reg\$',\s*'\.reg'/);
+    });
+
+    t('-JsonToReg renders Registry entries in the correct .reg syntax for each Type', () => {
+      const out = iis(
+        makeForm({ serverVersion: '10.0.26100' }),
+        makeOutput('intermediate', { cipherFormat: 'iana' }),
+      );
+      // DWord rendering: zero-padded 8-digit lowercase hex via the {0:x8}
+      // format specifier, masked to 32-bit unsigned.
+      assert.match(out, /'=dword:'\s*\+\s*\('\{0:x8\}'\s*-f\s*\$u\)/);
+      assert.match(out, /\[uint32\]\(\[int64\]\$e\.Value\s+-band 0xFFFFFFFF\)/);
+      // String rendering uses ConvertTo-RegStringLiteral (escapes \\ and ").
+      assert.match(out, /'String'\s*\{[\s\S]*?ConvertTo-RegStringLiteral -Value \(\[string\]\$e\.Value\)/);
+      // MultiString -> hex(7) UTF-16LE byte stream with NUL terminators.
+      assert.match(out, /'MultiString'\s*\{[\s\S]*?ConvertTo-RegMultiStringHex -Values \$arr/);
+      assert.match(out, /'hex\(7\):'/);
+      assert.match(out, /\[System\.Text\.Encoding\]::Unicode\.GetBytes/);
+      // Existed=$false (value did not exist before apply) -> "Name"=- (delete-value)
+      assert.match(out, /if \(-not \$e\.Existed\) \{[\s\S]*?\$name \+ '=-'/);
+      // HKLM\... is rewritten to the long-form HKEY_LOCAL_MACHINE\... that
+      // .reg files require. Note: the local must NOT be named $regPath
+      // (PowerShell is case-insensitive and would clobber the $RegPath
+      // parameter) — assert it is named $regKey instead. Also assert the
+      // pattern matches `HKLM\` (regex `^HKLM\\`) and the replacement is a
+      // SINGLE backslash (`HKEY_LOCAL_MACHINE\`), not two.
+      assert.match(out, /\$regKey = \$p -replace\s+'\^HKLM\\\\','HKEY_LOCAL_MACHINE\\'/);
+      assert.ok(!/\$regPath\s*=\s*\$p\s*-replace/.test(out),
+        'inner local must not shadow the $RegPath parameter (PowerShell is case-insensitive)');
+      // WebConfig entries cannot be expressed in .reg — emit `;` comments.
+      assert.match(out, /WebConfig entries \(NOT representable in a \.reg file\)/);
+      // .reg files MUST be UTF-16LE with BOM, otherwise reg.exe rejects them.
+      assert.match(out, /System\.Text\.UnicodeEncoding\(\$false,\s*\$true\)/);
+    });
+
+    // ---- L3 (revisited): ordering with the new -JsonToReg branch ----------
+    t('JsonToReg branch is positioned BEFORE Restore branch and AFTER helpers', () => {
+      const out = iis(
+        makeForm({ serverVersion: '10.0.26100' }),
+        makeOutput('intermediate', { cipherFormat: 'iana' }),
+      );
+      const idxConvertHelper = out.indexOf('function ConvertFrom-DoUndoJsonToReg');
+      const idxJsonToReg     = out.search(/if \(\$JsonToReg\) \{/);
+      const idxRestore       = out.search(/if \(\$Restore\) \{/);
+      assert.ok(idxConvertHelper > 0 && idxJsonToReg > idxConvertHelper,
+        'ConvertFrom-DoUndoJsonToReg must be defined before its `if ($JsonToReg)` invocation');
+      assert.ok(idxRestore > idxJsonToReg,
+        '`if ($JsonToReg)` must precede `if ($Restore)`');
+    });
+
+
     t('default backup base is created under %ProgramData% with an Administrators-only ACL', () => {
       const out = iis(
         makeForm({ serverVersion: '10.0.26100' }),

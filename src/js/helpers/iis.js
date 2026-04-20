@@ -217,6 +217,10 @@ export default (form, output) => {
       '#   .\\Set-IISTls.ps1                              # snapshot current state, then apply\n'+
       '#   .\\Set-IISTls.ps1 -BackupPath C:\\path\\backup    # custom backup base path\n'+
       '#   .\\Set-IISTls.ps1 -Restore -BackupPath C:\\path\\backup   # roll back from <base>.undo.json\n'+
+      '#   .\\Set-IISTls.ps1 -JsonToReg C:\\path\\backup.do.json [-RegOut out.reg]\n'+
+      '#                                                  # convert a do/undo JSON snapshot to a\n'+
+      '#                                                  # Windows Registry Editor v5 (.reg) file.\n'+
+      '#                                                  # Read-only; does not require Administrator.\n'+
       '#\n'+
       '# Schannel protocol / cipher / group changes require a REBOOT to take effect.\n'+
       '#\n'+
@@ -264,40 +268,263 @@ export default (form, output) => {
       '[CmdletBinding()]\n'+
       'param(\n'+
       '    [switch]$Restore,\n'+
-      '    [string]$BackupPath\n'+
+      '    [string]$BackupPath,\n'+
+      '    # Read-only conversion of a do.json / undo.json snapshot into a\n'+
+      '    # Windows Registry Editor v5 (.reg) file. Does NOT modify the host.\n'+
+      '    [string]$JsonToReg,\n'+
+      '    [string]$RegOut\n'+
       ')\n'+
       '\n'+
       '$ErrorActionPreference = \'Stop\'\n'+
       '\n'+
       '# Require Administrator: every key written below lives under HKLM.\n'+
-      '$identity  = [Security.Principal.WindowsIdentity]::GetCurrent()\n'+
-      '$principal = New-Object Security.Principal.WindowsPrincipal $identity\n'+
-      'if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {\n'+
-      '    throw \'Set-IISTls.ps1 must be run from an elevated PowerShell prompt (Administrator).\'\n'+
+      '# (Skipped for -JsonToReg: that path performs only a read of the JSON\n'+
+      '# snapshot and writes a .reg file, no HKLM mutation.)\n'+
+      'if (-not $JsonToReg) {\n'+
+      '    $identity  = [Security.Principal.WindowsIdentity]::GetCurrent()\n'+
+      '    $principal = New-Object Security.Principal.WindowsPrincipal $identity\n'+
+      '    if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {\n'+
+      '        throw \'Set-IISTls.ps1 must be run from an elevated PowerShell prompt (Administrator).\'\n'+
+      '    }\n'+
       '}\n'+
       '\n'+
       '# ---------------------------------------------------------------------------\n'+
-      '# L1: default backup base path is under %ProgramData% in a directory we\n'+
-      '# create with an Administrators-only ACL, so a non-admin process cannot\n'+
-      '# pre-create a reparse point at the snapshot location.\n'+
+      '# L1 + file-ACL hardening: default backup base path is under %ProgramData%\n'+
+      '# in a directory we create with an Administrators+SYSTEM-only ACL, so a\n'+
+      '# non-admin process cannot pre-create a reparse point at the snapshot\n'+
+      '# location nor read the snapshot files (which describe the host\'s pre-\n'+
+      '# apply Schannel state — useful intelligence for an attacker scoping a\n'+
+      '# downgrade attack). The same ACL is applied to the do.json / undo.json\n'+
+      '# files themselves immediately after they are written.\n'+
       '# ---------------------------------------------------------------------------\n'+
+      'function New-AdminOnlyAcl {\n'+
+      '    param([Parameter(Mandatory)][ValidateSet(\'Directory\',\'File\')][string]$Kind)\n'+
+      '    if ($Kind -eq \'Directory\') {\n'+
+      '        $acl = New-Object System.Security.AccessControl.DirectorySecurity\n'+
+      '        $inherit = [System.Security.AccessControl.InheritanceFlags]::"ContainerInherit, ObjectInherit"\n'+
+      '    }\n'+
+      '    else {\n'+
+      '        $acl = New-Object System.Security.AccessControl.FileSecurity\n'+
+      '        $inherit = [System.Security.AccessControl.InheritanceFlags]::None\n'+
+      '    }\n'+
+      '    $acl.SetAccessRuleProtection($true, $false)  # disable inheritance, drop inherited\n'+
+      '    $rights = [System.Security.AccessControl.FileSystemRights]::FullControl\n'+
+      '    $prop   = [System.Security.AccessControl.PropagationFlags]::None\n'+
+      '    $allow  = [System.Security.AccessControl.AccessControlType]::Allow\n'+
+      '    foreach ($sid in @(\'S-1-5-32-544\',\'S-1-5-18\')) {  # Administrators, SYSTEM\n'+
+      '        $id = (New-Object System.Security.Principal.SecurityIdentifier $sid)\n'+
+      '        $acl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule $id,$rights,$inherit,$prop,$allow))\n'+
+      '    }\n'+
+      '    return $acl\n'+
+      '}\n'+
       'function Initialize-BackupDirectory {\n'+
       '    [CmdletBinding()] param([string]$Path)\n'+
-      '    if (-not (Test-Path -LiteralPath $Path)) {\n'+
-      '        $null = New-Item -Path $Path -ItemType Directory -Force\n'+
-      '        # Lock down to BUILTIN\\Administrators + NT AUTHORITY\\SYSTEM only.\n'+
-      '        $acl = New-Object System.Security.AccessControl.DirectorySecurity\n'+
-      '        $acl.SetAccessRuleProtection($true, $false)  # disable inheritance, drop inherited\n'+
-      '        $rights = [System.Security.AccessControl.FileSystemRights]::FullControl\n'+
-      '        $inherit = [System.Security.AccessControl.InheritanceFlags]::"ContainerInherit, ObjectInherit"\n'+
-      '        $prop = [System.Security.AccessControl.PropagationFlags]::None\n'+
-      '        $allow = [System.Security.AccessControl.AccessControlType]::Allow\n'+
-      '        foreach ($sid in @(\'S-1-5-32-544\',\'S-1-5-18\')) {  # Administrators, SYSTEM\n'+
-      '            $id = (New-Object System.Security.Principal.SecurityIdentifier $sid)\n'+
-      '            $acl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule $id,$rights,$inherit,$prop,$allow))\n'+
+      '    if (Test-Path -LiteralPath $Path) {\n'+
+      '        # Refuse to use a path that is a file or a reparse point —\n'+
+      '        # otherwise an attacker could pre-create a junction at our\n'+
+      '        # default %ProgramData% location aimed at e.g. C:\\Windows.\n'+
+      '        $existing = Get-Item -LiteralPath $Path -Force\n'+
+      '        if (-not $existing.PSIsContainer) {\n'+
+      '            throw "Backup path $Path exists but is not a directory."\n'+
       '        }\n'+
-      '        Set-Acl -Path $Path -AclObject $acl\n'+
+      '        if ($existing.Attributes.HasFlag([System.IO.FileAttributes]::ReparsePoint)) {\n'+
+      '            throw "Backup path $Path is a reparse point/junction; refusing to use it."\n'+
+      '        }\n'+
       '    }\n'+
+      '    else {\n'+
+      '        $null = New-Item -Path $Path -ItemType Directory -Force\n'+
+      '    }\n'+
+      '    # Always (re-)apply the Administrators+SYSTEM-only ACL so an existing\n'+
+      '    # but loosely-permissioned directory gets locked down too.\n'+
+      '    Set-Acl -Path $Path -AclObject (New-AdminOnlyAcl -Kind Directory)\n'+
+      '}\n'+
+      'function Protect-File {\n'+
+      '    [CmdletBinding()] param([Parameter(Mandatory)][string]$Path)\n'+
+      '    if (-not (Test-Path -LiteralPath $Path)) {\n'+
+      '        throw "Protect-File: file does not exist: $Path"\n'+
+      '    }\n'+
+      '    $f = Get-Item -LiteralPath $Path -Force\n'+
+      '    if ($f.Attributes.HasFlag([System.IO.FileAttributes]::ReparsePoint)) {\n'+
+      '        throw "Protect-File: refusing to ACL a reparse point: $Path"\n'+
+      '    }\n'+
+      '    Set-Acl -Path $Path -AclObject (New-AdminOnlyAcl -Kind File)\n'+
+      '}\n'+
+      'function New-ProtectedFile {\n'+
+      '    # Create an EMPTY file with the strict Administrators+SYSTEM ACL\n'+
+      '    # BEFORE any content is written. The previous "Set-Content first,\n'+
+      '    # Protect-File after" sequence created the file with the parent\n'+
+      '    # directory\'s ACL — fine for the default %ProgramData% location\n'+
+      '    # (locked down by Initialize-BackupDirectory) but NOT for a\n'+
+      '    # caller-supplied -BackupPath under e.g. C:\\Temp, where the file\n'+
+      '    # would briefly hold sensitive snapshot content with a permissive\n'+
+      '    # inherited ACL between the Set-Content write and the Set-Acl tighten.\n'+
+      '    [CmdletBinding()] param([Parameter(Mandatory)][string]$Path)\n'+
+      '    if (Test-Path -LiteralPath $Path) {\n'+
+      '        $existing = Get-Item -LiteralPath $Path -Force\n'+
+      '        if ($existing.PSIsContainer) {\n'+
+      '            throw "New-ProtectedFile: $Path exists and is a directory."\n'+
+      '        }\n'+
+      '        if ($existing.Attributes.HasFlag([System.IO.FileAttributes]::ReparsePoint)) {\n'+
+      '            throw "New-ProtectedFile: $Path exists and is a reparse point/symlink; refusing to use it."\n'+
+      '        }\n'+
+      '        # Pre-existing file: truncate via FileMode::Create (CreateNew\n'+
+      '        # would throw if the file exists; Truncate would throw if it\n'+
+      '        # does not). The handle is closed immediately — Set-Content\n'+
+      '        # below opens its own handle.\n'+
+      '        $fs = [System.IO.File]::Open($Path, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)\n'+
+      '        $fs.Close()\n'+
+      '    }\n'+
+      '    else {\n'+
+      '        # Atomic create-or-fail: FileMode::CreateNew defeats a TOCTOU\n'+
+      '        # race where an attacker plants a symlink between our\n'+
+      '        # Test-Path check and our open call.\n'+
+      '        $fs = [System.IO.File]::Open($Path, [System.IO.FileMode]::CreateNew, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)\n'+
+      '        $fs.Close()\n'+
+      '    }\n'+
+      '    # Tighten the ACL while the file is still empty.\n'+
+      '    Set-Acl -Path $Path -AclObject (New-AdminOnlyAcl -Kind File)\n'+
+      '}\n'+
+      '\n'+
+      '# ---------------------------------------------------------------------------\n'+
+      '# -JsonToReg: read a do.json or undo.json snapshot and emit a Windows\n'+
+      '# Registry Editor v5 (.reg) file. This is a read-only operation that\n'+
+      '# does NOT modify the host, so it runs BEFORE the elevation check (a\n'+
+      '# non-admin can convert JSON -> .reg for inspection / staging). The\n'+
+      '# emitted .reg file is ACL-protected with the same Administrators+SYSTEM\n'+
+      '# ACL as the source JSON to avoid leaking the host\'s pre-apply state.\n'+
+      '#\n'+
+      '# Mapping:\n'+
+      '#   Kind=Registry, Existed=$true, Type=DWord       -> "Name"=dword:XXXXXXXX\n'+
+      '#   Kind=Registry, Existed=$true, Type=String      -> "Name"="..."\n'+
+      '#   Kind=Registry, Existed=$true, Type=MultiString -> "Name"=hex(7):...   (UTF-16LE)\n'+
+      '#   Kind=Registry, Existed=$false                  -> "Name"=-            (delete-value)\n'+
+      '#   Kind=WebConfig                                 -> ; comment (.reg cannot express IIS web-config)\n'+
+      '# ---------------------------------------------------------------------------\n'+
+      'function ConvertTo-RegStringLiteral {\n'+
+      '    param([Parameter(Mandatory)][AllowEmptyString()][string]$Value)\n'+
+      '    # .reg v5 string escapes: backslash and double-quote are doubled by\n'+
+      '    # backslash; everything else is literal (including non-ASCII, which\n'+
+      '    # the .reg file is UTF-16LE BOM-prefixed to support).\n'+
+      '    return \'"\' + ($Value -replace \'\\\\\',\'\\\\\\\\\' -replace \'"\',\'\\\\"\') + \'"\'\n'+
+      '}\n'+
+      'function ConvertTo-RegMultiStringHex {\n'+
+      '    param([Parameter(Mandatory)][AllowEmptyCollection()][string[]]$Values)\n'+
+      '    # REG_MULTI_SZ in .reg files is hex(7) of UTF-16LE-encoded strings\n'+
+      '    # each terminated by a U+0000, with a final extra U+0000 terminator.\n'+
+      '    $bytes = New-Object System.Collections.Generic.List[byte]\n'+
+      '    foreach ($s in $Values) {\n'+
+      '        $b = [System.Text.Encoding]::Unicode.GetBytes($s)\n'+
+      '        $bytes.AddRange($b)\n'+
+      '        $bytes.Add(0); $bytes.Add(0)  # U+0000 terminator for this string\n'+
+      '    }\n'+
+      '    $bytes.Add(0); $bytes.Add(0)      # final U+0000 terminator for the list\n'+
+      '    return \'hex(7):\' + (($bytes | ForEach-Object { \'{0:x2}\' -f $_ }) -join \',\')\n'+
+      '}\n'+
+      'function ConvertFrom-DoUndoJsonToReg {\n'+
+      '    param([Parameter(Mandatory)][string]$JsonPath,\n'+
+      '          [Parameter(Mandatory)][string]$RegPath)\n'+
+      '    if (-not (Test-Path -LiteralPath $JsonPath)) {\n'+
+      '        throw "JsonToReg: input JSON not found: $JsonPath"\n'+
+      '    }\n'+
+      '    $entries = Get-Content -LiteralPath $JsonPath -Raw | ConvertFrom-Json\n'+
+      '    # Group Registry entries by Path to emit one [Key] block each.\n'+
+      '    $regEntries = @($entries | Where-Object { $_.Kind -eq \'Registry\' })\n'+
+      '    $webEntries = @($entries | Where-Object { $_.Kind -eq \'WebConfig\' })\n'+
+      '    $byPath = @{}\n'+
+      '    foreach ($e in $regEntries) {\n'+
+      '        if (-not $byPath.ContainsKey($e.Path)) { $byPath[$e.Path] = New-Object System.Collections.ArrayList }\n'+
+      '        $null = $byPath[$e.Path].Add($e)\n'+
+      '    }\n'+
+      '    $sb = New-Object System.Text.StringBuilder\n'+
+      '    $null = $sb.AppendLine(\'Windows Registry Editor Version 5.00\')\n'+
+      '    $null = $sb.AppendLine(\'\')\n'+
+      '    $null = $sb.AppendLine(\'; Generated from \' + $JsonPath)\n'+
+      '    $null = $sb.AppendLine(\'; NOTE: Importing a .reg file APPENDS values; it cannot DELETE values\')\n'+
+      '    $null = $sb.AppendLine(\';       that did not exist before (those appear below as "Name"=- entries\')\n'+
+      '    $null = $sb.AppendLine(\';       which DO delete on import). For full fidelity, prefer\')\n'+
+      '    $null = $sb.AppendLine(\';       `.\\\\Set-IISTls.ps1 -Restore -BackupPath ...` over `reg import`.\')\n'+
+      '    $null = $sb.AppendLine(\'\')\n'+
+      '    foreach ($p in $byPath.Keys) {\n'+
+      '        # .reg uses the long-form HKEY_LOCAL_MACHINE prefix. Note: this\n'+
+      '        # local is named $regKey (NOT $regPath) because PowerShell\n'+
+      '        # variables are case-insensitive and $RegPath is the function\n'+
+      '        # parameter — assigning to $regPath here would silently clobber\n'+
+      '        # the output path, causing WriteAllText below to write to the\n'+
+      '        # last key name instead of the requested .reg file.\n'+
+      '        $regKey = $p -replace \'^HKLM\\\\\',\'HKEY_LOCAL_MACHINE\\\' `\n'+
+      '                     -replace \'^HKCU\\\\\',\'HKEY_CURRENT_USER\\\'\n'+
+      '        $null = $sb.AppendLine(\'[\' + $regKey + \']\')\n'+
+      '        foreach ($e in $byPath[$p]) {\n'+
+      '            $name = ConvertTo-RegStringLiteral -Value $e.Name\n'+
+      '            if (-not $e.Existed) {\n'+
+      '                $null = $sb.AppendLine($name + \'=-\')\n'+
+      '                continue\n'+
+      '            }\n'+
+      '            switch ($e.Type) {\n'+
+      '                \'DWord\' {\n'+
+      '                    # Coerce via [uint32] to render the unsigned 32-bit value.\n'+
+      '                    $u = [uint32]([int64]$e.Value -band 0xFFFFFFFF)\n'+
+      '                    $null = $sb.AppendLine($name + \'=dword:\' + (\'{0:x8}\' -f $u))\n'+
+      '                }\n'+
+      '                \'String\' {\n'+
+      '                    $null = $sb.AppendLine($name + \'=\' + (ConvertTo-RegStringLiteral -Value ([string]$e.Value)))\n'+
+      '                }\n'+
+      '                \'MultiString\' {\n'+
+      '                    # ConvertFrom-Json gives an Object[]; coerce to string[].\n'+
+      '                    $arr = @($e.Value | ForEach-Object { [string]$_ })\n'+
+      '                    $null = $sb.AppendLine($name + \'=\' + (ConvertTo-RegMultiStringHex -Values $arr))\n'+
+      '                }\n'+
+      '                default {\n'+
+      '                    $null = $sb.AppendLine(\'; UNSUPPORTED Type=\' + $e.Type + \' for \' + $name)\n'+
+      '                }\n'+
+      '            }\n'+
+      '        }\n'+
+      '        $null = $sb.AppendLine(\'\')\n'+
+      '    }\n'+
+      '    if ($webEntries.Count -gt 0) {\n'+
+      '        $null = $sb.AppendLine(\'; --- WebConfig entries (NOT representable in a .reg file) ---\')\n'+
+      '        $null = $sb.AppendLine(\'; The following IIS web-configuration entries from the snapshot cannot\')\n'+
+      '        $null = $sb.AppendLine(\'; be expressed in .reg syntax. Use Set-WebConfigurationProperty in\')\n'+
+      '        $null = $sb.AppendLine(\'; PowerShell (or `.\\\\Set-IISTls.ps1 -Restore`) to apply them:\')\n'+
+      '        foreach ($e in $webEntries) {\n'+
+      '            $null = $sb.AppendLine(\';   Filter=\' + $e.Filter + \'  Name=\' + $e.Name + \'  Value=\' + $e.Value)\n'+
+      '        }\n'+
+      '    }\n'+
+      '    # .reg files MUST be UTF-16LE with a BOM, otherwise reg.exe will\n'+
+      '    # reject the file or mangle non-ASCII string values. Open the\n'+
+      '    # PRE-EXISTING (caller-protected) file with Truncate so the file\n'+
+      '    # ACL set by New-ProtectedFile is preserved (vs. WriteAllText\n'+
+      '    # which creates the file with the parent\'s inherited ACL on miss).\n'+
+      '    $utf16 = New-Object System.Text.UnicodeEncoding($false, $true)  # LE, BOM\n'+
+      '    if (-not (Test-Path -LiteralPath $RegPath)) {\n'+
+      '        throw "ConvertFrom-DoUndoJsonToReg: output file must be pre-created (and ACL-protected) by the caller: $RegPath"\n'+
+      '    }\n'+
+      '    $fs = [System.IO.File]::Open($RegPath, [System.IO.FileMode]::Truncate, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)\n'+
+      '    try {\n'+
+      '        $sw = New-Object System.IO.StreamWriter($fs, $utf16)\n'+
+      '        $sw.Write($sb.ToString())\n'+
+      '        $sw.Flush()\n'+
+      '        $sw.Close()\n'+
+      '    }\n'+
+      '    finally { $fs.Dispose() }\n'+
+      '}\n'+
+      '\n'+
+      'if ($JsonToReg) {\n'+
+      '    if (-not $RegOut) {\n'+
+      '        # Default: same base name, .reg extension.\n'+
+      '        $RegOut = [System.IO.Path]::ChangeExtension($JsonToReg, \'.reg\')\n'+
+      '        # Strip the .do/.undo infix from the stem so foo.undo.json -> foo.reg.\n'+
+      '        $RegOut = $RegOut -replace \'\\.(do|undo)\\.reg$\',\'.reg\'\n'+
+      '    }\n'+
+      '    # Pre-create with strict ACL BEFORE writing the .reg payload\n'+
+      '    # (the snapshot may describe sensitive Schannel state — same\n'+
+      '    # reasoning as for .do.json / .undo.json above).\n'+
+      '    New-ProtectedFile -Path $RegOut\n'+
+      '    ConvertFrom-DoUndoJsonToReg -JsonPath $JsonToReg -RegPath $RegOut\n'+
+      '    Write-Host "Wrote .reg file: $RegOut"\n'+
+      '    Write-Host \'NOTE: `reg import` cannot DELETE registry values; for fidelity use\'\n'+
+      '    Write-Host \'      `.\\Set-IISTls.ps1 -Restore -BackupPath <base>` instead.\'\n'+
+      '    return\n'+
       '}\n'+
       '\n'+
       'if (-not $BackupPath) {\n'+
@@ -523,8 +750,14 @@ export default (form, output) => {
       '    }\n'+
       '}\n'+
       '\n'+
-      '# Persist DO-plan and UNDO-snapshot before mutating anything.\n'+
+      '# Persist DO-plan and UNDO-snapshot. Pre-create each file with the\n'+
+      '# strict Administrators+SYSTEM ACL FIRST, then Set-Content overwrites\n'+
+      '# the (empty) file — file ACLs are preserved across Set-Content writes\n'+
+      '# to an existing file, so the snapshot data never lands on disk under\n'+
+      '# the parent directory\'s (potentially permissive) inherited ACL.\n'+
+      'New-ProtectedFile -Path ("${BackupPath}.do.json")\n'+
       '$DoPlan | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath ("${BackupPath}.do.json")   -Encoding UTF8\n'+
+      'New-ProtectedFile -Path ("${BackupPath}.undo.json")\n'+
       '$Undo   | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath ("${BackupPath}.undo.json") -Encoding UTF8\n'+
       'Write-Host "DO-plan written to ${BackupPath}.do.json ("$DoPlan.Count" entries)"\n'+
       'Write-Host "UNDO snapshot written to ${BackupPath}.undo.json"\n'+
