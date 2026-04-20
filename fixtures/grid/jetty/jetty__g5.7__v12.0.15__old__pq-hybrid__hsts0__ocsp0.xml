@@ -1,0 +1,58 @@
+<!--
+generated 1970-01-01, Mozilla Guideline v5.7, Jetty 12.0.15, old config, PQ: hybrid
+https://ssl-config.mozilla.org/#server=jetty&version=12.0.15&config=old&guideline=5.7
+-->
+<Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
+  <Set name="KeyStorePath">
+    <Property name="jetty.home" default="." />
+    <Property name="jetty.sslContext.keyStorePath" default="/path/to/key_store" />
+  </Set>
+
+  <!-- TLSv1.3 requires Java 11 or higher -->
+  <Set name="IncludeProtocols">
+    <Array type="String">
+      <Item>TLSv1</Item>
+      <Item>TLSv1.1</Item>
+      <Item>TLSv1.2</Item>
+      <Item>TLSv1.3</Item>
+    </Array>
+  </Set>
+
+  <Set name="IncludeCipherSuites">
+    <Array type="String">
+      <Item>TLS_AES_128_GCM_SHA256</Item>
+      <Item>TLS_AES_256_GCM_SHA384</Item>
+      <Item>TLS_CHACHA20_POLY1305_SHA256</Item>
+      <Item>TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256</Item>
+      <Item>TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256</Item>
+      <Item>TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384</Item>
+      <Item>TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384</Item>
+      <Item>TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256</Item>
+      <Item>TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256</Item>
+      <Item>TLS_DHE_RSA_WITH_AES_128_GCM_SHA256</Item>
+      <Item>TLS_DHE_RSA_WITH_AES_256_GCM_SHA384</Item>
+      <Item>TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256</Item>
+      <Item>TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256</Item>
+      <Item>TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256</Item>
+      <Item>TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA</Item>
+      <Item>TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA</Item>
+      <Item>TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384</Item>
+      <Item>TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384</Item>
+      <Item>TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA</Item>
+      <Item>TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA</Item>
+      <Item>TLS_DHE_RSA_WITH_AES_128_CBC_SHA256</Item>
+      <Item>TLS_DHE_RSA_WITH_AES_256_CBC_SHA256</Item>
+      <Item>TLS_RSA_WITH_AES_128_GCM_SHA256</Item>
+      <Item>TLS_RSA_WITH_AES_256_GCM_SHA384</Item>
+      <Item>TLS_RSA_WITH_AES_128_CBC_SHA256</Item>
+      <Item>TLS_RSA_WITH_AES_256_CBC_SHA256</Item>
+      <Item>TLS_RSA_WITH_AES_128_CBC_SHA</Item>
+      <Item>TLS_RSA_WITH_AES_256_CBC_SHA</Item>
+      <Item>TLS_RSA_WITH_3DES_EDE_CBC_SHA</Item>
+    </Array>
+  </Set>
+
+  <Set name="useCipherSuitesOrder">
+    <Property name="jetty.sslContext.useCipherSuitesOrder" default="true" />
+  </Set>
+</Configure>

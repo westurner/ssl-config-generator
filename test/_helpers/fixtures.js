@@ -11,7 +11,14 @@
 import test from 'node:test'; // re-exported convenience: not used here, but
                               // keeps the dependency surface in one place.
 
-export const PROFILES = ['modern', 'intermediate', 'old'];
+// PROFILES and PQ_MODES are re-exported from src/js/grid-axes.js so the
+// off-line grid generator (scripts/render-grid.js) and the test fixtures
+// share a single source of truth for "which axis values exist". Adding a
+// fourth Mozilla profile or a fourth PQ mode means editing grid-axes.js
+// once and every consumer picks it up.
+import { PROFILES as _PROFILES, PQ_MODES as _PQ_MODES } from '../../src/js/grid-axes.js';
+export const PROFILES = _PROFILES;
+export const PQ_MODES = _PQ_MODES;
 
 // PQ surface (mirrors src/js/state.js's pqMode + form.pq). Tests that need
 // to exercise PQ codepaths construct fixtures via:
@@ -25,7 +32,6 @@ export const PROFILES = ['modern', 'intermediate', 'old'];
 // PQ_GROUPS lists the IANA-assigned hybrid ML-KEM codepoints that helpers
 // with a PQ codepath are expected to surface (as group tokens, comments,
 // or both) when output.supportsPq is true.
-export const PQ_MODES = ['none', 'hybrid', 'only'];
 export const PQ_GROUPS = ['X25519MLKEM768', 'SecP256r1MLKEM768', 'SecP384r1MLKEM1024'];
 
 // Per-profile snapshot of guideline 5.7. Embedded inline (rather than read at

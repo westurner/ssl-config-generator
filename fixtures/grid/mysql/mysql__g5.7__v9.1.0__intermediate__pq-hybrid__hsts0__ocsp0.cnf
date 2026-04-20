@@ -1,0 +1,8 @@
+# generated 1970-01-01, Mozilla Guideline v5.7, MySQL 9.1.0, OpenSSL 3.6.1, intermediate config, PQ: hybrid
+# https://ssl-config.mozilla.org/#server=mysql&version=9.1.0&config=intermediate&openssl=3.6.1&guideline=5.7
+[mysqld]
+require_secure_transport = on
+ssl-cert = /path/to/signed_cert_plus_intermediates
+ssl-key = /path/to/private_key
+tls_version = TLSv1.2,TLSv1.3
+ssl-cipher = ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305

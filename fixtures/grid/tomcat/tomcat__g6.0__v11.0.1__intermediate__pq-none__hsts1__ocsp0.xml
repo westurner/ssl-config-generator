@@ -1,0 +1,62 @@
+<!--
+generated 1970-01-01, Mozilla Guideline v6.0, Tomcat 11.0.1, intermediate config, PQ: none, HSTS
+https://ssl-config.mozilla.org/#server=tomcat&version=11.0.1&config=intermediate&hsts&guideline=6.0&pq=none
+-->
+<Connector
+    port="80"
+    redirectPort="443" />
+
+<!--
+  HTTP Strict Transport Security (HSTS): emitted by Tomcat's built-in
+  HttpHeaderSecurityFilter (REQUIRES Tomcat 8.5+; the filter class
+  org.apache.catalina.filters.HttpHeaderSecurityFilter was added in 8.5.0).
+  Add the <filter>/<filter-mapping> below to WEB-INF/web.xml of your
+  application (or to $CATALINA_BASE/conf/web.xml to apply to every
+  deployed app). See:
+    https://tomcat.apache.org/tomcat-11.0-doc/config/filter.html#HTTP_Header_Security_Filter
+
+  Equivalent rendered response header:
+    Strict-Transport-Security: max-age=63072000; includeSubDomains
+-->
+<filter>
+    <filter-name>httpHeaderSecurity</filter-name>
+    <filter-class>org.apache.catalina.filters.HttpHeaderSecurityFilter</filter-class>
+    <async-supported>true</async-supported>
+    <init-param>
+        <param-name>hstsEnabled</param-name>
+        <param-value>true</param-value>
+    </init-param>
+    <init-param>
+        <param-name>hstsMaxAgeSeconds</param-name>
+        <param-value>63072000</param-value>
+    </init-param>
+    <init-param>
+        <param-name>hstsIncludeSubDomains</param-name>
+        <param-value>true</param-value>
+    </init-param>
+</filter>
+<filter-mapping>
+    <filter-name>httpHeaderSecurity</filter-name>
+    <url-pattern>/*</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+</filter-mapping>
+
+<Connector
+    port="443"
+    SSLEnabled="true">
+
+    <!-- TLSv1.3 requires Java 11 or higher -->
+    <SSLHostConfig
+        ciphers="TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305"
+        disableSessionTickets="true"
+        honorCipherOrder="false"
+        protocols="TLSv1.2,TLSv1.3">
+
+        <Certificate
+            certificateFile="/path/to/signed_certificate"
+            certificateChainFile="/path/to/intermediate_certificate"
+            certificateKeyFile="/path/to/private_key" />
+    </SSLHostConfig>
+
+    <UpgradeProtocol className="org.apache.coyote.http2.Http2Protocol" />
+</Connector>

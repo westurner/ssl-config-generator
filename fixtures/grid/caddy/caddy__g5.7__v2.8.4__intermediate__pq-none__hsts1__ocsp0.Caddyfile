@@ -1,0 +1,21 @@
+# generated 1970-01-01, Mozilla Guideline v5.7, Caddy 2.8.4, intermediate config, PQ: none, HSTS
+# https://ssl-config.mozilla.org/#server=caddy&version=2.8.4&config=intermediate&hsts&guideline=5.7&pq=none
+
+# replace example.com with your domain name
+example.com {
+
+  tls {
+    # Note: Caddy automatically configures safe TLS settings,
+    # so 'ciphers' and 'curves' may safely be commented out to use Caddy defaults.
+
+    # Due to a lack of DHE support, you -must- use an ECDSA cert to support IE 11 on Windows 7
+
+    ciphers TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256
+    curves x25519 secp256r1 secp384r1
+    #protocols tls1.2 tls1.3
+  }
+
+  # HSTS (63072000 seconds)
+  header Strict-Transport-Security "max-age=63072000; includeSubDomains"
+
+}

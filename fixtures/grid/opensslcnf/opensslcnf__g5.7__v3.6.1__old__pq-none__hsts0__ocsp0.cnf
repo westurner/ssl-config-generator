@@ -1,0 +1,51 @@
+# generated 1970-01-01, Mozilla Guideline v5.7, OpenSSL config (openssl.cnf) 3.6.1, OpenSSL 3.6.1, old config, PQ: none
+# https://ssl-config.mozilla.org/#server=opensslcnf&version=3.6.1&config=old&openssl=3.6.1&guideline=5.7&pq=none
+#
+# This is a snippet for OpenSSL's configuration file (openssl.cnf).
+# It applies system-wide to programs that use OpenSSL via the
+# default config loader, including Python's ssl module, curl,
+# libpq, Rust apps that link the `openssl` crate, and many others.
+# (Pure-Rust apps that use rustls do NOT honour openssl.cnf; see
+# the "Rust (rustls)" target instead. For Python applications that
+# prefer to configure TLS in code, see the "Python (ssl module)"
+# target which emits an ssl.SSLContext directly.)
+#
+# MinProtocol / MaxProtocol below mirror the chosen Mozilla profile:
+#   - "modern"        -> MinProtocol = TLSv1.3
+#   - "intermediate"  -> MinProtocol = TLSv1.2 (TLS 1.2 is still
+#                        required by intermediate for legacy clients;
+#                        select the "modern" profile to require 1.3)
+#   - "old"           -> MinProtocol = TLSv1   (last-resort interop)
+# When PQ-only mode is selected, MinProtocol is always TLSv1.3:
+# ML-KEM key-exchange groups are only defined for TLS 1.3.
+#
+# Locate your active openssl.cnf with:
+#     openssl version -d
+# (the file is named "openssl.cnf" in that directory).
+#
+# To inspect available providers / KEMs / groups:
+#     openssl version
+#     openssl list -providers
+#     openssl list -kem-algorithms
+#     openssl list -key-exchange-algorithms
+
+openssl_conf = openssl_init
+
+[openssl_init]
+ssl_conf = ssl_module
+
+[ssl_module]
+# Apply the configuration to every SSL_CTX created by libssl.
+system_default = system_default_sect
+
+[system_default_sect]
+MinProtocol = TLSv1
+MaxProtocol = TLSv1.3
+# TLSv1.2 (and earlier) cipher list (OpenSSL syntax)
+CipherString = ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES256-SHA256:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA
+# TLSv1.3 cipher suites (IANA names, colon-separated)
+Ciphersuites = TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
+# Key-exchange groups (a.k.a. "curves") in preference order.
+Groups = X25519:prime256v1:secp384r1
+# Honor server cipher / group preference (SSL_CONF 'Options' directive).
+Options = ServerPreference

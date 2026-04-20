@@ -1,0 +1,22 @@
+<!--
+generated 1970-01-01, Mozilla Guideline v6.0, Tomcat 11.0.1, modern config, PQ: none
+https://ssl-config.mozilla.org/#server=tomcat&version=11.0.1&config=modern&guideline=6.0&pq=none
+-->
+<Connector
+    port="443"
+    SSLEnabled="true">
+
+    <!-- TLSv1.3 requires Java 11 or higher -->
+    <SSLHostConfig
+        disableSessionTickets="true"
+        honorCipherOrder="false"
+        protocols="TLSv1.3">
+
+        <Certificate
+            certificateFile="/path/to/signed_certificate"
+            certificateChainFile="/path/to/intermediate_certificate"
+            certificateKeyFile="/path/to/private_key" />
+    </SSLHostConfig>
+
+    <UpgradeProtocol className="org.apache.coyote.http2.Http2Protocol" />
+</Connector>

@@ -1,0 +1,20 @@
+# generated 1970-01-01, Mozilla Guideline v6.0, Traefik 3.2.1, modern config, PQ: hybrid
+# https://ssl-config.mozilla.org/#server=traefik&version=3.2.1&config=modern&guideline=6.0
+[http.routers]
+  [http.routers.router-secure]
+    rule = "Host(`example.com`)"
+    service = "service-id"
+
+    [http.routers.router-secure.tls]
+      options = "modern"
+
+# due to Go limitations, it is highly recommended that you use an ECDSA
+# certificate, or you may experience compatibility issues
+[[tls.certificates]]
+  certFile = "/path/to/signed_cert_plus_intermediates"
+  keyFile = "/path/to/private_key"
+
+[tls.options]
+  [tls.options.modern]
+      minVersion = "VersionTLS13"
+      curvePreferences = ["X25519MLKEM768","X25519","CurveP256","CurveP384"]

@@ -1,0 +1,22 @@
+<!--
+generated 1970-01-01, Mozilla Guideline v6.0, Jetty 12.0.15, modern config, PQ: only
+https://ssl-config.mozilla.org/#server=jetty&version=12.0.15&config=modern&guideline=6.0&pq=only
+-->
+<Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
+  <Set name="KeyStorePath">
+    <Property name="jetty.home" default="." />
+    <Property name="jetty.sslContext.keyStorePath" default="/path/to/key_store" />
+  </Set>
+
+  <!-- TLSv1.3 requires Java 11 or higher -->
+  <Set name="IncludeProtocols">
+    <Array type="String">
+      <Item>TLSv1.3</Item>
+    </Array>
+  </Set>
+
+
+  <Set name="useCipherSuitesOrder">
+    <Property name="jetty.sslContext.useCipherSuitesOrder" default="false" />
+  </Set>
+</Configure>
