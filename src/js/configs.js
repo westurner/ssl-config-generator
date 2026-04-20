@@ -1,6 +1,6 @@
 // configs for the supported pieces of software
 // hasVersions, showSupports, supportsHsts, and usesOpenssl only need to be defined if false
-// supportsPq is assumed FALSE unless explicitly set to true (opposite default of
+// supportsPq is assumed FALSE unless explicitly set (opposite default of
 // the *Selection flags below): a helper opts IN by declaring it has a PQ-aware
 // render branch today (X25519MLKEM768 / SecP256r1MLKEM768 / SecP384r1MLKEM1024
 // codepoints, or a managed-policy alias like s2n-tls 'default_pq' that
@@ -10,11 +10,17 @@
 // question "is this server even ABLE to negotiate post-quantum key exchange
 // today?" — orthogonal to the per-curve / per-cipher mitigation-latency
 // flags below.
-//   - supportsPq:true  → helper has a PQ-aware codepath in src/js/helpers/.
-//                        State.js mirrors this onto output.supportsPq so the
-//                        UI / harness can branch on it the same way they
-//                        branch on supportsCurveSelection.
-//   - (omitted)        → no PQ surface; the helper ignores form.pq.
+//   - supportsPq:'<ver>' → helper has a PQ-aware codepath in src/js/helpers/;
+//                          the value is the first upstream release that
+//                          surfaced PQ key exchange (mirrors how `tls13` and
+//                          version-string `supportsOcspStapling` are
+//                          encoded). State.js coerces this to a boolean on
+//                          output.supportsPq so the UI / harness can branch
+//                          on it the same way they branch on
+//                          supportsCurveSelection.
+//   - supportsPq:true    → also accepted (treated as "supports PQ, version
+//                          unknown / not yet recorded").
+//   - (omitted)          → no PQ surface; the helper ignores form.pq.
 //
 // supportsCipherSelection and supportsCurveSelection are assumed `true` unless defined otherwise.
 //   - supportsCipherSelection:false  → the helper cannot emit a per-cipher list
@@ -82,7 +88,10 @@ module.exports = {
     latestVersion: '2.8.4',
     eolBefore: '2.0.0',
     name: 'Caddy',
-    supportsPq: true,
+    // Caddy 2.10.0 (Apr 2025) shipped support for the standardised
+    // X25519MLKEM768 hybrid PQ group by default. Earlier 2.x had only
+    // experimental Kyber drafts via Go's crypto/tls.
+    supportsPq: '2.10.0',
     tls13: '0.11.5',
     usesOpenssl: false,
   },
@@ -115,7 +124,9 @@ module.exports = {
     latestVersion: '1.23.3',
     eolBefore: '1.22.0',
     name: 'Go',
-    supportsPq: true,
+    // Go 1.24 (Feb 2025) added X25519MLKEM768 to crypto/tls and enabled
+    // it in the default group preference list.
+    supportsPq: '1.24.0',
     tls13: '1.13.0',
     usesOpenssl: false,
     supportedCiphers: [ 'TLS_RSA_WITH_RC4_128_SHA', 'TLS_RSA_WITH_3DES_EDE_CBC_SHA', 'TLS_RSA_WITH_AES_128_CBC_SHA', 'TLS_RSA_WITH_AES_256_CBC_SHA', 'TLS_RSA_WITH_AES_128_CBC_SHA256', 'TLS_RSA_WITH_AES_128_GCM_SHA256', 'TLS_RSA_WITH_AES_256_GCM_SHA384', 'TLS_ECDHE_ECDSA_WITH_RC4_128_SHA', 'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA', 'TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA', 'TLS_ECDHE_RSA_WITH_RC4_128_SHA', 'TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA', 'TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA', 'TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA', 'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256', 'TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256', 'TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256', 'TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256', 'TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384', 'TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384', 'TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256', 'TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256' ],
@@ -126,7 +137,9 @@ module.exports = {
     name: 'GnuTLS',
     showSupports: false,
     supportsHsts: false,
-    supportsPq: true,
+    // GnuTLS 3.8.10 (Mar 2025) added the GROUP-X25519-MLKEM768 hybrid
+    // group; gated by minver('3.8.10', ...) in src/js/helpers/gnutls.js.
+    supportsPq: '3.8.10',
     tls13: '3.6.4',
     usesOpenssl: false,
     // GnuTLS 3.8.10 added the X25519-MLKEM768 hybrid PQ group.
@@ -142,7 +155,10 @@ module.exports = {
     latestVersion: '10.0.26100', // Windows Server 2025 / Win 11 24H2
     eolBefore: '10.0.17763',     // pre-Server 2019 builds are unsupported
     name: 'IIS (PowerShell)',
-    supportsPq: true,
+    // Hybrid ML-KEM in Schannel/SymCrypt is exposed on Windows Server
+    // 2025 / Win 11 24H2 (Insider builds) — first build numbered
+    // 10.0.26100; group string MLKEM768X25519.
+    supportsPq: '10.0.26100',
     tls13: '10.0.20348',         // Server 2022 / Win 11; first Schannel build with TLS 1.3 enabled by default
     usesOpenssl: false,
     // IIS uses Schannel (not OpenSSL). The helper emits a PowerShell script
@@ -204,7 +220,10 @@ module.exports = {
     name: 'OpenSSL config (openssl.cnf)',
     showSupports: false,
     supportsHsts: false,
-    supportsPq: true,
+    // OpenSSL 3.5.0 (Apr 2025) shipped built-in ML-KEM hybrid groups
+    // (X25519MLKEM768, SecP256r1MLKEM768, SecP384r1MLKEM1024); gated by
+    // minver('3.5.0', form.opensslVersion) in src/js/helpers/opensslcnf.js.
+    supportsPq: '3.5.0',
     tls13: '1.1.1',
     // openssl.cnf is read by every OpenSSL-based application, including
     // Python's `ssl` module (which honours system openssl.cnf), curl, etc.
@@ -224,7 +243,10 @@ module.exports = {
     showSupports: false,
     supportsHsts: false,
     supportsOcspStapling: false,
-    supportsPq: true,
+    // OpenLDAP delegates ML-KEM to its TLS backend (built-in hybrid groups
+    // require OpenSSL >= 3.5.0). The 2.6 series is the supported baseline
+    // that links cleanly with modern OpenSSL.
+    supportsPq: '2.6.0',
     // OpenLDAP delegates TLS 1.3 to its TLS backend (OpenSSL 1.1.1+ or
     // GnuTLS 3.6+). 2.4.46 was the first 2.4.x to compile cleanly against
     // OpenSSL 1.1.1; the 2.5 series made it the supported baseline.
@@ -274,7 +296,12 @@ module.exports = {
     name: 'Python (ssl module)',
     showSupports: false,
     supportsHsts: false,
-    supportsPq: true,
+    // Python 3.13 (Oct 2024) added SSLContext.set_groups(), which the
+    // helper uses to pass X25519MLKEM768 et al. as a multi-group preference
+    // list; older 3.x can only pin a single classical curve via
+    // set_ecdh_curve(). The underlying OpenSSL must still be >= 3.5 for
+    // built-in ML-KEM hybrids.
+    supportsPq: '3.13.0',
     tls13: '3.7.0',
     usesOpenssl: true,
     // Python's ssl module wraps OpenSSL. SSLContext.set_groups() (multi-
@@ -299,7 +326,9 @@ module.exports = {
     showSupports: false,
     supportsCurveSelection: false,
     supportsHsts: false,
-    supportsPq: true,
+    // rustls 0.23.18 (Nov 2024, with the aws-lc-rs provider) negotiates
+    // X25519MLKEM768 automatically when both peers support it.
+    supportsPq: '0.23.18',
     tls13: '0.20.0',
     usesOpenssl: false,
     // rustls 0.23.18 (aws-lc-rs provider) negotiates X25519MLKEM768.
@@ -319,7 +348,9 @@ module.exports = {
     // ("default_tls13" was introduced in the v1.0.0 series; TLS 1.3 support
     // landed in security policy "20190801").
     tls13: '1.0.0',
-    supportsPq: true,
+    // s2n-tls 1.5.0 introduced the stable "default_pq" named policy alias
+    // (X25519MLKEM768 hybrid); see PQ_MIN_VERSION in src/js/helpers/s2n.js.
+    supportsPq: '1.5.0',
     usesOpenssl: false,
     // s2n-tls is configured via named security policies passed to
     // s2n_config_set_cipher_preferences(); cipher / curve lists are not
@@ -353,7 +384,10 @@ module.exports = {
     latestVersion: '3.2.1',
     eolBefore: '2.11.0',
     name: 'Traefik',
-    supportsPq: true,
+    // Traefik 3.4.0 (Apr 2025) was the first stable release built with
+    // Go >= 1.24 and therefore the first to negotiate X25519MLKEM768 via
+    // its tls.curvePreferences directive.
+    supportsPq: '3.4.0',
     tls13: '2.0.0',
     usesOpenssl: false,
   },
