@@ -4,7 +4,7 @@
 // [+no_tlsv1 …]. The token's PRESENCE means the version is EXCLUDED, so
 // we use the harness's `negationVersionTokens` mode: the harness asserts
 // the token is present iff that version is NOT in output.protocols.
-import { runStandardHelperSuite } from './_helpers/harness.js';
+import runStandardHelperSuite from './_helpers/harness.js';
 import exim from '../src/js/helpers/exim.js';
 
 runStandardHelperSuite({

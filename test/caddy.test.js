@@ -2,7 +2,7 @@
 //
 // Caddy consumes IANA-style cipher names (configs.js declares
 // cipherFormat:'go', which state.js maps onto the IANA cipher list).
-import { runStandardHelperSuite } from './_helpers/harness.js';
+import runStandardHelperSuite from './_helpers/harness.js';
 import caddy from '../src/js/helpers/caddy.js';
 
 runStandardHelperSuite({

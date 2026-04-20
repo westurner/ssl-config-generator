@@ -7,7 +7,7 @@
 // limitations are surfaced as user-visible warnings in the rendered
 // CloudFormation, so we opt-out of cipherSyntax + hsts via the warning
 // regex (no silent skips).
-import { runStandardHelperSuite } from './_helpers/harness.js';
+import runStandardHelperSuite from './_helpers/harness.js';
 import awsalb from '../src/js/helpers/awsalb.js';
 
 runStandardHelperSuite({

@@ -3,7 +3,7 @@
 // Oracle HTTP uses Apache-derived `SSLProtocol -all +TLSv1.2 +TLSv1.3`
 // syntax. configs.js declares cipherFormat:'iana'. HSTS is supported via
 // `Header always set Strict-Transport-Security`.
-import { runStandardHelperSuite } from './_helpers/harness.js';
+import runStandardHelperSuite from './_helpers/harness.js';
 import oraclehttp from '../src/js/helpers/oraclehttp.js';
 
 runStandardHelperSuite({

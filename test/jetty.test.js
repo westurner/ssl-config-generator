@@ -6,7 +6,7 @@
 // '#' commentLine regex must be overridden so the explanatory
 // `<!-- TLSv1.3 requires Java 11 or higher -->` comment doesn't false-positive
 // the protocol-gating check. Jetty has no built-in HSTS support.
-import { runStandardHelperSuite } from './_helpers/harness.js';
+import runStandardHelperSuite from './_helpers/harness.js';
 import jetty from '../src/js/helpers/jetty.js';
 
 runStandardHelperSuite({

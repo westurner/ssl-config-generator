@@ -4,7 +4,7 @@
 // smtpd_tls_*_protocols and smtp_tls_*_protocols. Older versions emit a
 // negation list (!SSLv2, !SSLv3, …) which we don't exercise here (we test
 // the latest stable release). Postfix has no notion of HSTS.
-import { runStandardHelperSuite } from './_helpers/harness.js';
+import runStandardHelperSuite from './_helpers/harness.js';
 import postfix from '../src/js/helpers/postfix.js';
 
 runStandardHelperSuite({

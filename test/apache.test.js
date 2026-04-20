@@ -1,5 +1,5 @@
 // apache (mod_ssl) helper — generic-suite tests via the shared harness.
-import { runStandardHelperSuite } from './_helpers/harness.js';
+import runStandardHelperSuite from './_helpers/harness.js';
 import apache from '../src/js/helpers/apache.js';
 
 runStandardHelperSuite({

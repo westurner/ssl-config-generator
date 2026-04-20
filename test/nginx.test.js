@@ -1,5 +1,5 @@
 // nginx helper — generic-suite tests via the shared harness.
-import { runStandardHelperSuite } from './_helpers/harness.js';
+import runStandardHelperSuite from './_helpers/harness.js';
 import nginx from '../src/js/helpers/nginx.js';
 
 runStandardHelperSuite({

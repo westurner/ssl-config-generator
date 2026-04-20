@@ -2,7 +2,7 @@
 //
 // Redis 6.0+ supports TLS via tls-protocols "TLSv1.2 TLSv1.3" (each
 // version listed). Redis is a key-value store; no HSTS.
-import { runStandardHelperSuite } from './_helpers/harness.js';
+import runStandardHelperSuite from './_helpers/harness.js';
 import redis from '../src/js/helpers/redis.js';
 
 runStandardHelperSuite({

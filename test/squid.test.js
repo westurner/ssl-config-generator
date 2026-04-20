@@ -6,7 +6,7 @@
 // mode. The harness's pre-pass strips `NO_…` tokens before scanning for
 // forbidden primitives, so `NO_SSLv3` no longer trips the SSLv3 forbidden
 // regex (it's the OPPOSITE of an SSLv3 mention — it disables SSLv3).
-import { runStandardHelperSuite } from './_helpers/harness.js';
+import runStandardHelperSuite from './_helpers/harness.js';
 import squid from '../src/js/helpers/squid.js';
 
 runStandardHelperSuite({
