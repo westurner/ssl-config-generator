@@ -236,13 +236,13 @@ spellings to be defensive.
   that supports PQ should still **defensively** pin its minimum-version
   directive to TLSv1.3 when `form.pq === 'only'`, rather than trust the
   caller-side override.
-* **Never silently fall back to a classical curve in PQ-only mode.** The
-  Python helper used to call `set_ecdh_curve(<classical>)` in the
-  `except AttributeError:` branch on Python < 3.13 — that defeats the
-  user's PQ-only choice and is a real security hole. Raise loudly
-  instead. The same rule applies to GnuTLS: don't use `+GROUP-ALL` as a
-  fallback for unrecognized curves; emit a `# WARNING:` comment and use
-  the Mozilla classical-group baseline (X25519, prime256v1, secp384r1).
+* **Never silently fall back to a classical curve / wider group set in
+  PQ-only mode, and never silently widen the group set when a requested
+  group has no per-helper mapping.** Either raise loudly (rendered
+  config) or emit a `# WARNING:` comment and fall back to the Mozilla
+  classical-group baseline — never to "all groups". Language-specific
+  rationale lives in the affected helper's header / inline comments
+  (see `src/js/helpers/python.js` and `src/js/helpers/gnutls.js`).
 * Hybrid mode (`form.pq === 'hybrid'`) **may** keep a classical fallback;
   document the downgrade-risk trade-off in a comment.
 
