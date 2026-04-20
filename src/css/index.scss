@@ -50,3 +50,47 @@ div.input-group ~ small {
     margin: 1px 8px 8px 0;
   }
 }
+
+/* Table styles — bs-4.6.2.css is a stripped subset and omits .table* rules,
+   so we define them here to match what the Bootstrap class names imply.
+   Targets: table.table / .table-sm / .table-striped / .table-bordered /
+            .table-hover used on the capabilities table in index.ejs. */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: inherit;
+
+  th,
+  td {
+    padding: .5rem;
+    vertical-align: top;
+    border: 1px solid #adb5bd;
+  }
+
+  thead th {
+    background-color: #6c757d;
+    color: #fff;
+    border-color: #6c757d;
+    vertical-align: bottom;
+  }
+}
+
+.table-sm {
+  th,
+  td {
+    padding: .25rem;
+  }
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+  background-color: #f8f9fa;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #e9ecef;
+}

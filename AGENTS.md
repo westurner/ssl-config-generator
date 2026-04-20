@@ -61,7 +61,7 @@ config/
 | Command           | What it does                                                  |
 | ----------------- | ------------------------------------------------------------- |
 | `npm install`     | Install dependencies (Node ≥ 22 recommended).                 |
-| `npm start`       | Webpack watch + browser-sync on http://localhost:3001         |
+| `npm start`       | Webpack watch + browser-sync on http://localhost:5500         |
 | `npm run watch`   | Same as `npm start`.                                          |
 | `npm run build`   | Production webpack build (CSP-hardened, versioned artifacts). |
 | `npm run analyze` | Production build + `webpack-bundle-analyzer` report.          |
