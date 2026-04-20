@@ -41,13 +41,42 @@ export default (form, output) => {
   }
 
   // Key-exchange groups (incl. PQ filtering already applied upstream).
+  //
+  // Security note: when a requested group has no GnuTLS mapping (e.g. a
+  // future guideline ships a typo or a new IANA group we don't translate
+  // yet), we MUST NOT silently widen to `+GROUP-ALL` — that would enable
+  // every group GnuTLS knows, including weaker DH groups the Mozilla
+  // profile deliberately excluded. Instead, surface the unrecognized
+  // group(s) in a `# WARNING:` comment AND fall back to the Mozilla
+  // classical-group baseline so the priority string stays parseable
+  // without becoming a permissive superset of the operator's intent.
+  const SAFE_DEFAULT_GROUPS = ['GROUP-X25519', 'GROUP-SECP256R1', 'GROUP-SECP384R1'];
   const groupTokens = [];
+  const unmappedGroups = [];
   for (const g of output.tlsCurves) {
     if (GROUP_MAP[g]) groupTokens.push('+'+GROUP_MAP[g]);
+    else unmappedGroups.push(g);
   }
+  let groupsWarning = '';
   if (groupTokens.length === 0) {
-    // Sane fallback so the priority string still parses.
-    groupTokens.push('+GROUP-ALL');
+    // None of the requested groups translated — emit warning + safe default
+    // (NOT GROUP-ALL, which would silently widen the policy).
+    groupsWarning =
+      '#\n'+
+      '# WARNING: none of the requested TLS groups ('+
+      output.tlsCurves.join(', ')+
+      ') has a GnuTLS GROUP-* mapping;\n'+
+      '#          falling back to the Mozilla classical-group baseline ('+
+      SAFE_DEFAULT_GROUPS.join(', ')+').\n'+
+      '#          Review the rendered priority string before deploying.\n';
+    for (const g of SAFE_DEFAULT_GROUPS) groupTokens.push('+'+g);
+  } else if (unmappedGroups.length > 0) {
+    // Partial mapping: emit warning naming the dropped groups so the
+    // operator knows their config request was silently narrowed.
+    groupsWarning =
+      '#\n'+
+      '# WARNING: the following requested TLS groups have no GnuTLS\n'+
+      '#          GROUP-* mapping and were dropped: '+unmappedGroups.join(', ')+'.\n';
   }
   tokens.push.apply(tokens, groupTokens);
 
@@ -94,6 +123,10 @@ export default (form, output) => {
       '#\n'+
       '# WARNING: GROUP-X25519-MLKEM768 requires GnuTLS 3.8.10 or newer.\n'+
       '#          Older GnuTLS releases do not implement ML-KEM.\n';
+  }
+
+  if (groupsWarning) {
+    conf += groupsWarning;
   }
 
   conf += '\n'+priority+'\n';

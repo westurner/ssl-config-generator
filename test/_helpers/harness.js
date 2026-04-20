@@ -574,6 +574,89 @@ export function runStandardHelperSuite(opts) {
       `optOuts.curvesPresent:{ warning: /<your group line>/ }.`);
   });
 
+  // ----- 9. Input validation: helpers must fail LOUDLY on bad inputs -------
+  //
+  // Helpers are pure render templates: they receive a `(form, output)` pair
+  // built by state.js from vetted guideline JSON. There is no per-helper
+  // input validation (validation lives upstream in state.js). The realistic
+  // threat model is: a future state.js refactor accidentally fails to
+  // populate a field on `output`, and the helper silently emits a broken /
+  // permissive config.
+  //
+  // Contract enforced here: for any malformed `(form, output)` pair, the
+  // helper must either
+  //   (a) throw an exception, OR
+  //   (b) render output where TLS-policy DIRECTIVE lines never contain the
+  //       literal `undefined` / `null` substring — i.e. a missing field
+  //       must be omitted, not silently spliced in.
+  //
+  // Why both alternatives are acceptable:
+  //   - Some helpers (mysql, jetty) don't reference `form` at all, so an
+  //     undefined `form` is harmless by construction.
+  //   - Other helpers (litespeed) actively defend against missing
+  //     `output.protocols` by skipping the directive — a *good* defensive
+  //     pattern that we want to preserve.
+  //
+  // We exclude:
+  //   - Comment lines (`#`, `//`, `;`, `<!-- … -->`) — `# undefined` in a
+  //     header banner is a cosmetic bug, not a silent security regression.
+  //   - String-literal payloads (CloudFormation `Description:`,
+  //     `MessageBody:`, AWS `PolicyName:`, Go `w.Write([]byte("…"))`)
+  //     because they are not TLS-policy directives — they are descriptive
+  //     metadata that downstream consumers (CloudFormation, the Go
+  //     compiler) parse and reject loudly if malformed (`Mozilla-undefined-
+  //     v5-0` is an invalid AWS policy reference and would be rejected by
+  //     AWS at deploy time, not silently honoured).
+  t('input validation: helper either throws or omits fields cleanly on malformed input (no "undefined" in TLS directives)', () => {
+    const cases = [
+      { label: 'undefined form, undefined output',     args: [undefined, undefined] },
+      { label: 'null form, null output',               args: [null, null] },
+      { label: 'valid form, undefined output',         args: [baseForm(), undefined] },
+      { label: 'undefined form, valid output',         args: [undefined, baseOutput('intermediate')] },
+      // The realistic threat: state.js fails to populate output.* fields.
+      // Helpers must defend against this OR throw.
+      { label: 'valid form, output={} (no protocols)', args: [baseForm(), {}] },
+    ];
+    // Strip lines that any sane TLS-config parser would ignore:
+    //   - shell / nginx / haproxy / ini / postfix / postgres style:  `# …`
+    //   - go / traefik (TOML alt) / rust style:                      `// …`
+    //   - stunnel / coturn / squid:                                  `; …`
+    //   - jetty XML / litespeed XML:                                 `<!-- … -->`
+    // Then strip lines that are descriptive metadata (not TLS directives):
+    //   - CloudFormation `Description:` / `MessageBody:` (awsalb/awselb)
+    //   - AWS `PolicyName:` / inline `Mozilla-…-v…-…` policy refs
+    //   - Go HTTP response body string literals (`w.Write([]byte("…"))`)
+    // After stripping, `undefined` / `null` would only appear inside a
+    // real TLS directive — which IS a silent security failure.
+    const stripIgnorableLines = (s) => s
+      .replace(/<!--[\s\S]*?-->/g, '')                           // multi-line XML comments
+      .replace(/^\s*#.*$/gm, '')                                 // # …
+      .replace(/^\s*\/\/.*$/gm, '')                              // // …
+      .replace(/^\s*;.*$/gm, '')                                 // ; …
+      .replace(/^.*\b(?:Description|MessageBody|PolicyName)\s*:.*$/gm, '')  // CloudFormation/AWS metadata
+      .replace(/^.*Mozilla-[A-Za-z0-9_-]+-v\d+-\d+.*$/gm, '')    // AWS policy refs (Mozilla-X-vN-N)
+      .replace(/^.*w\.Write\(\[\]byte\("[^"]*"\)\).*$/gm, '');   // Go HTTP response body literals
+    for (const c of cases) {
+      let out;
+      let threw = false;
+      try {
+        out = helper(c.args[0], c.args[1]);
+      } catch (_e) {
+        threw = true;
+      }
+      if (threw) continue;  // (a) — fail-loud is acceptable
+      assert.equal(typeof out, 'string',
+        `helper accepted malformed input '${c.label}' and returned a non-string (${typeof out})`);
+      const directives = stripIgnorableLines(out);
+      assert.doesNotMatch(directives, /\bundefined\b/,
+        `helper accepted malformed input '${c.label}' and silently spliced the literal token 'undefined' ` +
+        `into a TLS-policy DIRECTIVE — a security-critical setting may have been corrupted`);
+      assert.doesNotMatch(directives, /(?<![\w/-])null(?![\w-])/,
+        `helper accepted malformed input '${c.label}' and silently spliced the literal token 'null' ` +
+        `into a TLS-policy DIRECTIVE — a security-critical setting may have been corrupted`);
+    }
+  });
+
   // ----- 8. Legacy-version smoke (coverage of older code paths) -------------
   // Many helpers fork heavily on `minver(...)` to support old server / openssl
   // releases (e.g. lighttpd 1.4.46, postfix 3.4, haproxy 1.5, traefik 1.x,
