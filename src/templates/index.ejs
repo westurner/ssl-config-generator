@@ -177,6 +177,70 @@
       <button type="button" class="btn btn-light border text-muted" id="copy" data-clipboard-target="#output-config">
         <svg id="copy-icon" viewBox="0 0 14 16" version="1.1" aria-hidden="true"><path fill-rule="evenodd" d="M2 13h4v1H2v-1zm5-6H2v1h5V7zm2 3V8l-3 3 3 3v-2h5v-2H9zM4.5 9H2v1h2.5V9zM2 12h2.5v-1H2v1zm9 1h1v2c-.02.28-.11.52-.3.7-.19.18-.42.28-.7.3H1c-.55 0-1-.45-1-1V4c0-.55.45-1 1-1h3c0-1.11.89-2 2-2 1.11 0 2 .89 2 2h3c.55 0 1 .45 1 1v5h-1V6H1v9h10v-2zM2 5h8c0-.55-.45-1-1-1H8c-.55 0-1-.45-1-1s-.45-1-1-1-1 .45-1 1-.45 1-1 1H3c-.55 0-1 .45-1 1z"></path></svg> Copy</button>
     </div>
+
+    <!-- Helpers / capability matrix, sourced from src/js/configs.js -->
+    <div id="helpers-table-container" class="mt-5">
+      <h3 id="helpers-table-heading">Supported software &amp; capabilities</h3>
+      <p class="text-muted small">
+        Per-helper attributes from
+        <a href="https://github.com/mozilla/ssl-config-generator/blob/master/src/js/configs.js"><code>src/js/configs.js</code></a>.
+        Defaults (when an attribute is omitted) follow the file's header
+        comment: <em>uses OpenSSL</em>, <em>HSTS</em>, <em>cipher selection</em>
+        and <em>curve selection</em> default to <strong>yes</strong>;
+        <em>OCSP stapling</em> and <em>PQ</em> default to <strong>no</strong>;
+        <em>cipher format</em> defaults to <code>openssl</code>. A version
+        string in the <em>OCSP stapling</em> column denotes the first release
+        with stapling support.
+      </p>
+      <div class="table-responsive">
+        <table class="table table-sm table-striped table-bordered" aria-labelledby="helpers-table-heading">
+          <thead class="thead-light">
+            <tr>
+              <th scope="col">Helper</th>
+              <th scope="col">Latest version</th>
+              <th scope="col">TLS 1.3 since</th>
+              <th scope="col">Uses OpenSSL</th>
+              <th scope="col">Cipher format</th>
+              <th scope="col">Cipher selection</th>
+              <th scope="col">Curve selection</th>
+              <th scope="col">HSTS</th>
+              <th scope="col">OCSP stapling</th>
+              <th scope="col">PQ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <%
+              const yesNo = (v, def) => {
+                const value = (v === undefined) ? def : v;
+                return value ? 'yes' : 'no';
+              };
+              const versionOr = (v, def) => {
+                if (v === undefined) return yesNo(undefined, def);
+                if (typeof v === 'string') return v;
+                return v ? 'yes' : 'no';
+              };
+              Object.entries(htmlWebpackPlugin.options.configs)
+                .filter(([, c]) => c.name)
+                .sort(([, a], [, b]) => a.name.localeCompare(b.name))
+                .forEach(([key, c]) => {
+            %>
+            <tr>
+              <th scope="row"><%= c.name %></th>
+              <td><%= c.latestVersion || '—' %></td>
+              <td><%= c.tls13 || '—' %></td>
+              <td><%= yesNo(c.usesOpenssl, true) %></td>
+              <td><code><%= c.cipherFormat || 'openssl' %></code></td>
+              <td><%= yesNo(c.supportsCipherSelection, true) %></td>
+              <td><%= yesNo(c.supportsCurveSelection, true) %></td>
+              <td><%= yesNo(c.supportsHsts, true) %></td>
+              <td><%= versionOr(c.supportsOcspStapling, false) %></td>
+              <td><%= yesNo(c.supportsPq, false) %></td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <footer class="w-100 bg-black text-white mt-5">
