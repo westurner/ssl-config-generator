@@ -175,8 +175,8 @@ function waitForServer(url, timeoutMs = 30000) {
 }
 
 // Start `npm start` (webpack-dev/browser-sync) in the background, return
-// a {url, kill} handle. browser-sync defaults to localhost:3001 (see
-// AGENTS.md "Build & dev"). The caller MUST call kill() in a finally
+// a {url, kill} handle. browser-sync is configured on port 5500 (see
+// config/webpack.config.js). The caller MUST call kill() in a finally
 // block to avoid leaking the dev-server child process.
 function startDevServer() {
   const child = spawn('npm', ['start'], {
@@ -188,7 +188,7 @@ function startDevServer() {
   // browser-sync URL never came up.
   child.stderr.on('data', d => process.stderr.write(`[npm start] ${d}`));
   return {
-    url: 'http://localhost:3001/',
+    url: 'http://localhost:5500/',
     kill: () => { try { child.kill('SIGTERM'); } catch (_) {} },
   };
 }
