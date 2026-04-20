@@ -217,6 +217,25 @@ module.exports = {
     supportsOcspStapling: '1.2',
     tls13: '1.4.35',
   },
+  openldap: {
+    latestVersion: '2.6.9',
+    eolBefore: '2.6.0',
+    name: 'OpenLDAP (slapd)',
+    showSupports: false,
+    supportsHsts: false,
+    supportsOcspStapling: false,
+    supportsPq: true,
+    // OpenLDAP delegates TLS 1.3 to its TLS backend (OpenSSL 1.1.1+ or
+    // GnuTLS 3.6+). 2.4.46 was the first 2.4.x to compile cleanly against
+    // OpenSSL 1.1.1; the 2.5 series made it the supported baseline.
+    tls13: '2.4.46',
+    // OpenLDAP's TLS directives (TLSCipherSuite, TLSProtocolMin, TLSECName,
+    // ...) are passed through to the linked OpenSSL/GnuTLS, so PQ readiness
+    // is gated by the OpenSSL version: built-in ML-KEM hybrid groups (e.g.
+    // X25519MLKEM768) require OpenSSL >= 3.5.0. TLSv1.3 ciphersuites are
+    // NOT settable via slapd directives — they come from the system
+    // openssl.cnf [system_default_sect] Ciphersuites line.
+  },
   oraclehttp: {
     cipherFormat: 'iana',
     latestVersion: '12.2.1',
