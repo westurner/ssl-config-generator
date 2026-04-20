@@ -130,8 +130,34 @@ recipe:
    | `supportsCurveSelection`   | `true`  | The server has no per-curve / per-group knob (MySQL, Tomcat, Jetty, Redis, Squid, Coturn, OracleHTTP, the LiteSpeed family, AWS …).   |
    | `supportsOcspStapling`     | `false` | Provide a min-version string (e.g. `'2.4.13'`) instead of a boolean if the feature was added in a specific release.                   |
    | `showSupports`             | `true`  | Don't render the "Supports …" oldest-clients footer.                                                                                  |
-   | `supportsPq`               | `false` | **Opt-in only.** Set `true` *after* the helper has a real PQ-aware code path (group token, comment, or managed-policy alias).         |
+   | `supportsPq`               | `false` | **Opt-in only.** Set `true` *after* the helper has a real PQ-aware code path — one of the three surfaces below.                       |
    | `cipherFormat`             | `'openssl'` | Set `'iana'` for Schannel / Java / rustls; set `'go'` for Go / Caddy / Traefik (state.js then puts the IANA cipher list into `output.ciphers`). |
+
+   The three PQ "code paths" referenced above — pick whichever one the
+   server's config language actually exposes:
+
+     - **Group token** — emit the IANA hybrid-group name (e.g.
+       `X25519MLKEM768`, `SecP256r1MLKEM768`, `SecP384r1MLKEM1024`) as a
+       literal value of the server's group / curve directive. The
+       harness's PQ-readiness assertion accepts this form.
+       *Example:* `opensslcnf.js` emits `Groups = X25519MLKEM768:X25519:…`
+       (and `gnutls.js` emits `+GROUP-X25519-MLKEM768`, `python.js`
+       passes the same token to `SSLContext.set_groups([...])`).
+     - **Comment** — when the server has no group-selection knob (or the
+       running version is too old to recognise the token), emit a
+       `# WARNING:` / `# Post-quantum:` comment block in the rendered
+       config that names the hybrid group(s), explains the gap, and (if
+       relevant) tells the operator which build / version unlocks them.
+       *Example:* `python.js` emits a `# Post-quantum: ML-KEM-768 hybrid
+       …` block on Python &lt; 3.13 where `set_groups()` doesn't exist;
+       `gnutls.js` emits a `# WARNING:` block on GnuTLS &lt; 3.8.10.
+     - **Managed-policy alias** — for servers that don't let users pick
+       groups directly but instead expose named "policies" / "presets"
+       (s2n-tls, AWS ALB, …), select the vendor's PQ-capable policy
+       string instead of a group list.
+       *Example:* `s2n.js` selects the `"default_pq"` policy
+       (`s2n_config_set_cipher_preferences(ctx, "default_pq")`) when
+       `form.pq !== 'none'`.
 
 3. **Write `src/js/helpers/<key>.js`.** Default-export a function
    `(form, output) => string`. Read `form.*` and `output.*` (see the
