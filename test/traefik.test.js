@@ -15,6 +15,7 @@ runStandardHelperSuite({
   serverVersion: '3.2.1',
   supportsHsts: true,
   cipherFormat: 'iana',  // Traefik renders bare IANA names inside cipherSuites=[…].
+  supportsPq: true,      // Traefik 2.x exposes X25519MLKEM768 via curvePreferences.
   protocolDirective: {
     // 'old' profile starts at TLSv1; the helper maps that to "VersionTLS10".
     old:          /minVersion = "VersionTLS10"/,

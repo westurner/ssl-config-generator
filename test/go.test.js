@@ -14,6 +14,7 @@ runStandardHelperSuite({
   serverVersion: '1.23.3',
   supportsHsts: true,
   cipherFormat: 'go',
+  supportsPq: true,  // Go 1.24+ exposes X25519MLKEM768 via tls.CurvePreferences.
   commentLine: /^\s*\/\/.*$/gm,
   protocolDirective: {
     // The 'old' Mozilla profile floor is TLSv1 (state.js spelling), which

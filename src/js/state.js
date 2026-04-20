@@ -210,6 +210,7 @@ export default async function () {
       supportsOcspStapling: supportsOcspStapling,
       supportsCipherSelection: configs[server].supportsCipherSelection !== false,
       supportsCurveSelection: configs[server].supportsCurveSelection !== false,
+      supportsPq: configs[server].supportsPq === true,
       tlsCurves: tlsCurves,
       // XXX: If DHE ciphers removed from guidelines, then usesDhe, dhCommand,
       //      dhParamSize, and helpers/*.js code which uses them can be removed

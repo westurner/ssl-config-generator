@@ -46,6 +46,13 @@
 //                              cannot express a curve preference declare
 //                              `supportsCurveSelection: false` in
 //                              configs.js (e.g. mysql, jetty, redis).
+//   8. PQ readiness          — if output.supportsPq === true (configs.js
+//                              opt-in flag), helper rendered with
+//                              form.pq='only' must surface a PQ marker
+//                              (X25519MLKEM768 / SecP256r1MLKEM768 /
+//                              SecP384r1MLKEM1024 group token, or any
+//                              post-quantum / ML-KEM mention). Helpers
+//                              without supportsPq:true skip silently.
 //
 // Per-helper opt-out:
 //   For helpers that genuinely cannot satisfy one of the above categories
@@ -60,7 +67,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PROFILES, makeOutput, makeForm } from './fixtures.js';
+import { PROFILES, PQ_GROUPS, makeOutput, makeForm } from './fixtures.js';
 
 // Strip text fragments that legitimately CONTAIN a forbidden token but that
 // have the OPPOSITE security meaning (i.e. they DISABLE the primitive). For
@@ -293,6 +300,13 @@ export function runStandardHelperSuite(opts) {
     // its test passes `supportsCurveSelection:false` at the v17.2 latest.
     supportsCipherSelection,
     supportsCurveSelection,
+    // PQ capability flag (mirrors configs.js supportsPq). Defaults to
+    // undefined → the harness inherits the fixture default (false). Helpers
+    // with a PQ-aware codepath today (caddy, gnutls, go, opensslcnf, rust,
+    // s2n, traefik) pass `true` here; the harness then asserts the helper
+    // surfaces a recognizable PQ marker (group token or PQ comment) when
+    // rendered with `pq:'only'`.
+    supportsPq,
     cipherFormat = 'openssl',
     protocolDirective,
     versionTokens,
@@ -326,6 +340,7 @@ export function runStandardHelperSuite(opts) {
     const merged = Object.assign({ cipherFormat }, overrides);
     if (supportsCipherSelection !== undefined) merged.supportsCipherSelection = supportsCipherSelection;
     if (supportsCurveSelection  !== undefined) merged.supportsCurveSelection  = supportsCurveSelection;
+    if (supportsPq              !== undefined) merged.supportsPq              = supportsPq;
     return makeOutput(profile, merged);
   };
 
@@ -581,6 +596,44 @@ export function runStandardHelperSuite(opts) {
       `none of the requested curves (${intermediate.tlsCurves.join(', ')}) appear in the rendered config. ` +
       `If this helper renames groups (e.g. prime256v1 → SECP256R1), declare ` +
       `optOuts.curvesPresent:{ warning: /<your group line>/ }.`);
+  });
+
+  // ----- 8. Post-Quantum readiness (capability flag) ------------------------
+  //
+  // Mirrors output.supportsPq (configs.js). Helpers that opt in (caddy,
+  // gnutls, go, opensslcnf, rust, s2n, traefik today) MUST surface a
+  // recognizable PQ marker — either an IANA-assigned ML-KEM hybrid group
+  // token (X25519MLKEM768 / SecP256r1MLKEM768 / SecP384r1MLKEM1024) or an
+  // explanatory comment mentioning post-quantum / PQ / ML-KEM — when
+  // rendered with `form.pq = 'only'` (modern profile, since PQ-only forces
+  // TLSv1.3).  This catches a regression that drops the helper's PQ
+  // codepath (e.g. a refactor that filters MLKEM tokens out of tlsCurves
+  // without preserving the explanatory comment, or a config rename that
+  // breaks the `if (form.pq === 'only')` branch).
+  //
+  // Helpers without supportsPq:true skip the assertion silently — they
+  // have no PQ surface to assert against and that's the documented
+  // capability state.
+  t('PQ readiness: helpers with supportsPq:true surface a PQ marker (group token or PQ/ML-KEM comment) when form.pq=only', () => {
+    // Mirror what state.js does in production for `pq:'only'`: strip
+    // classical groups from output.tlsCurves and force the X25519MLKEM768
+    // hybrid (state.js:159-174). The static fixtures don't run state.js,
+    // so we replicate the curve-filter shape here.
+    const merged = baseOutput('modern', {
+      pqMode: 'only',
+      tlsCurves: ['X25519MLKEM768'],
+    });
+    if (merged.supportsPq !== true) return;
+    const out = helper(baseForm({ config: 'modern', pq: 'only' }), merged);
+    if (_consumeOptOut('pqReadiness', optOuts, out)) return;
+    assert.equal(typeof out, 'string',
+      'PQ readiness: helper returned a non-string when rendered with pq=only');
+    const hasPqGroupToken = PQ_GROUPS.some(g => out.includes(g));
+    const hasPqMention    = /post[- ]?quantum|\bPQ\b|ML[- ]?KEM/i.test(out);
+    assert.ok(hasPqGroupToken || hasPqMention,
+      `helper opts in to supportsPq:true but rendered output for pq=only contains neither ` +
+      `a PQ group codepoint (${PQ_GROUPS.join(' / ')}) nor any post-quantum / ML-KEM mention. ` +
+      `Either restore the PQ codepath or drop supportsPq from configs.js.`);
   });
 
   // ----- 9. Input validation: helpers must fail LOUDLY on bad inputs -------

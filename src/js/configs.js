@@ -1,5 +1,21 @@
 // configs for the supported pieces of software
 // hasVersions, showSupports, supportsHsts, and usesOpenssl only need to be defined if false
+// supportsPq is assumed FALSE unless explicitly set to true (opposite default of
+// the *Selection flags below): a helper opts IN by declaring it has a PQ-aware
+// render branch today (X25519MLKEM768 / SecP256r1MLKEM768 / SecP384r1MLKEM1024
+// codepoints, or a managed-policy alias like s2n-tls 'default_pq' that
+// negotiates ML-KEM hybrids automatically). Helpers that have NO PQ surface
+// whatsoever (no group token, no comment, no policy alias) leave the flag
+// unset. The capability matrix surfaced by this flag answers the operator
+// question "is this server even ABLE to negotiate post-quantum key exchange
+// today?" — orthogonal to the per-curve / per-cipher mitigation-latency
+// flags below.
+//   - supportsPq:true  → helper has a PQ-aware codepath in src/js/helpers/.
+//                        State.js mirrors this onto output.supportsPq so the
+//                        UI / harness can branch on it the same way they
+//                        branch on supportsCurveSelection.
+//   - (omitted)        → no PQ surface; the helper ignores form.pq.
+//
 // supportsCipherSelection and supportsCurveSelection are assumed `true` unless defined otherwise.
 //   - supportsCipherSelection:false  → the helper cannot emit a per-cipher list
 //                                      (e.g. AWS ALB / s2n-tls expose only named
@@ -66,6 +82,7 @@ module.exports = {
     latestVersion: '2.8.4',
     eolBefore: '2.0.0',
     name: 'Caddy',
+    supportsPq: true,
     tls13: '0.11.5',
     usesOpenssl: false,
   },
@@ -98,6 +115,7 @@ module.exports = {
     latestVersion: '1.23.3',
     eolBefore: '1.22.0',
     name: 'Go',
+    supportsPq: true,
     tls13: '1.13.0',
     usesOpenssl: false,
     supportedCiphers: [ 'TLS_RSA_WITH_RC4_128_SHA', 'TLS_RSA_WITH_3DES_EDE_CBC_SHA', 'TLS_RSA_WITH_AES_128_CBC_SHA', 'TLS_RSA_WITH_AES_256_CBC_SHA', 'TLS_RSA_WITH_AES_128_CBC_SHA256', 'TLS_RSA_WITH_AES_128_GCM_SHA256', 'TLS_RSA_WITH_AES_256_GCM_SHA384', 'TLS_ECDHE_ECDSA_WITH_RC4_128_SHA', 'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA', 'TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA', 'TLS_ECDHE_RSA_WITH_RC4_128_SHA', 'TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA', 'TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA', 'TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA', 'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256', 'TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256', 'TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256', 'TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256', 'TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384', 'TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384', 'TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256', 'TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256' ],
@@ -108,6 +126,7 @@ module.exports = {
     name: 'GnuTLS',
     showSupports: false,
     supportsHsts: false,
+    supportsPq: true,
     tls13: '3.6.4',
     usesOpenssl: false,
     // GnuTLS 3.8.10 added the X25519-MLKEM768 hybrid PQ group.
@@ -170,6 +189,7 @@ module.exports = {
     name: 'OpenSSL config (openssl.cnf)',
     showSupports: false,
     supportsHsts: false,
+    supportsPq: true,
     tls13: '1.1.1',
     // openssl.cnf is read by every OpenSSL-based application, including
     // Python's `ssl` module (which honours system openssl.cnf), curl, etc.
@@ -231,6 +251,7 @@ module.exports = {
     showSupports: false,
     supportsCurveSelection: false,
     supportsHsts: false,
+    supportsPq: true,
     tls13: '0.20.0',
     usesOpenssl: false,
     // rustls 0.23.18 (aws-lc-rs provider) negotiates X25519MLKEM768.
@@ -250,6 +271,7 @@ module.exports = {
     // ("default_tls13" was introduced in the v1.0.0 series; TLS 1.3 support
     // landed in security policy "20190801").
     tls13: '1.0.0',
+    supportsPq: true,
     usesOpenssl: false,
     // s2n-tls is configured via named security policies passed to
     // s2n_config_set_cipher_preferences(); cipher / curve lists are not
@@ -283,6 +305,7 @@ module.exports = {
     latestVersion: '3.2.1',
     eolBefore: '2.11.0',
     name: 'Traefik',
+    supportsPq: true,
     tls13: '2.0.0',
     usesOpenssl: false,
   },

@@ -13,6 +13,18 @@ import test from 'node:test'; // re-exported convenience: not used here, but
 
 export const PROFILES = ['modern', 'intermediate', 'old'];
 
+// PQ surface (mirrors src/js/state.js's pqMode + form.pq). Tests that need
+// to exercise PQ codepaths construct fixtures via:
+//   makeForm({ pq: 'only' })
+//   makeOutput(profile, { pqMode: 'only', supportsPq: true })
+// The 'only' / 'mixed' / 'none' values match what state.js writes onto
+// output.pqMode (state.js:206) and form.pq (state.js:183). PQ_GROUPS lists
+// the IANA-assigned hybrid ML-KEM codepoints that helpers with a PQ
+// codepath are expected to surface (as group tokens, comments, or both)
+// when output.supportsPq is true.
+export const PQ_MODES = ['none', 'mixed', 'only'];
+export const PQ_GROUPS = ['X25519MLKEM768', 'SecP256r1MLKEM768', 'SecP384r1MLKEM1024'];
+
 // Per-profile snapshot of guideline 5.7. Embedded inline (rather than read at
 // runtime from the JSON file) so the test fixtures are stable across
 // guideline updates and so a future guideline-data refactor doesn't silently
@@ -177,12 +189,15 @@ export function makeOutput(profile, { cipherFormat = 'openssl', ...overrides } =
           || data.ciphers.iana.join(':').includes('_DHE_'),
 
     // Per-helper capability flags (configs.js / state.js). Tests overriding
-    // these can opt out of curve / cipher presence assertions in the harness
-    // for helpers that legitimately cannot express either knob (e.g. AWS ALB,
-    // s2n-tls). Defaults match configs.js: every helper supports both unless
-    // it has explicitly opted out.
+    // these can opt out of curve / cipher / PQ presence assertions in the
+    // harness for helpers that legitimately cannot express the knob (e.g.
+    // AWS ALB, s2n-tls). Defaults match configs.js: every helper supports
+    // cipher / curve selection unless explicitly opted out, and supportsPq
+    // defaults to FALSE — only helpers with a PQ codepath today (caddy,
+    // gnutls, go, opensslcnf, rust, s2n, traefik) opt in via configs.js.
     supportsCipherSelection: true,
     supportsCurveSelection: true,
+    supportsPq: false,
 
     pqMode: 'none',
   }, overrides);

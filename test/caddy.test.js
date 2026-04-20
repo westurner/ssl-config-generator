@@ -11,6 +11,7 @@ runStandardHelperSuite({
   serverVersion: '2.8.4',
   supportsHsts: true,
   cipherFormat: 'iana',  // Caddy renders bare IANA names (TLS_…) without a prefix.
+  supportsPq: true,      // Caddy 2.x exposes x25519mlkem768 via tls.curves.
   protocolDirective: {
     // Caddy emits a `protocols tls1.3` line only when TLS1.2 is NOT in the
     // list; otherwise it leaves a commented-out `#protocols tls1.2 tls1.3`
