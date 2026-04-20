@@ -1,3 +1,8 @@
 docs/
 build/
 node_modules/
+
+# Visual screenshots are opt-in (scripts/screenshot.js, SSL_GEN_SCREENSHOTS=1)
+# and inherently noisy (font hinting, AA, scrollbars). Don't track them
+# in git; review them locally or via the workflow_dispatch artifact upload.
+fixtures/screenshots/

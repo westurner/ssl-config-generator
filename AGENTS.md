@@ -11,7 +11,9 @@ correct changes quickly.
 src/
 ├── js/
 │   ├── configs.js           # Per-server capability matrix + version metadata
-│   ├── state.js             # Form → output state machine; reads guidelines
+│   ├── render.js            # PURE renderer: (form-shaped input, guideline JSON) → {form, output}
+│   ├── state.js             # DOM-bound thin wrapper around render.js (browser entry)
+│   ├── grid-axes.js         # Axis catalogue (PROFILES, PQ_MODES, GUIDELINES, filename↔fragment)
 │   ├── index.js             # DOM bootstrap; wires the form to render()
 │   ├── constants.js         # validHashKeys list (URL-fragment allowlist)
 │   ├── utils.js             # xmlEntities, sleep, ...
@@ -30,11 +32,22 @@ src/
 │   └── citations.bib        # BibTeX for spec / release-note citations
 └── css/                     # SCSS source
 
+scripts/
+├── render-grid.js           # CLI: materialise fixtures/grid/** (snapshot fixtures)
+└── screenshot.js            # CLI: opt-in Playwright PNG of the rendered page
+
+fixtures/
+├── grid/                    # Exact-output snapshot fixtures (committed)
+│   ├── _index.json          # cell → file path map
+│   └── <server>/<server>__g…__v…__<profile>__pq-…__hsts…__ocsp….<ext>
+└── screenshots/             # Visual snapshots (gitignored, opt-in)
+
 test/
 ├── <helper>.test.js         # One test file per helper in src/js/helpers/
+├── grid.test.js             # Snapshot suite: re-render every fixtures/grid/** file and diff
 └── _helpers/
     ├── harness.js           # runStandardHelperSuite() — generic 5+ asserts
-    └── fixtures.js          # makeForm(), makeOutput(), PQ_MODES, PQ_GROUPS
+    └── fixtures.js          # makeForm(), makeOutput(), PQ_MODES (re-exported from grid-axes), PQ_GROUPS
 
 config/
 └── webpack.config.js        # Build config (used by `npm run build` etc.)
@@ -64,6 +77,28 @@ The site itself is published to GitHub Pages from `main` via
 `.github/workflows/deploy-to-production.yml`; you do **not** need to run
 `npm run build` for deployment.
 
+## Three layers of testing
+
+The repo intentionally keeps three independent layers of regression
+coverage. They are complementary — each catches a class of bug the
+others can't — and they share a single renderer (`src/js/render.js`) so
+no logic is duplicated:
+
+| Layer                      | Artifact                                       | Where                                       | Run by default? |
+| -------------------------- | ---------------------------------------------- | ------------------------------------------- | --------------- |
+| **Property invariants**    | regex / forbidden-primitive assertions         | `test/_helpers/harness.js` + `test/<helper>.test.js` | yes (`npm test`)        |
+| **Exact-output snapshots** | one config file per cell of the helpers × params grid | `fixtures/grid/<server>/<server>__…`        | yes (`npm test` reads them; `npm run render-grid` writes them) |
+| **Visual snapshots**       | PNGs of the rendered web page                  | `fixtures/screenshots/` (gitignored)        | no (opt-in via `SSL_GEN_SCREENSHOTS=1` + `npm run screenshots`) |
+
+Why all three:
+- **Invariants** catch *forbidden* output: "any future helper change anywhere must never reintroduce 3DES in `modern`."
+- **Snapshots** catch *exact* output: a one-character drift in nginx's `intermediate + pq=hybrid + hsts` rendering shows up as a one-line `git diff` reviewers can read directly. Updating snapshots is `npm run render-grid` — never edit the `.conf` files by hand.
+- **Screenshots** catch *visual* regressions in the rendered HTML page (CSS, copy-button presence, layout) — orthogonal to the generated config string. They are opt-in because Playwright + Chromium is heavy and image diffs are noisy (font hinting, AA, scrollbars, header date).
+
+The shared renderer is `src/js/render.js` (`pureState({server, serverVersion, opensslVersion, config, hsts, ocsp, pqMode, guideline, guidelineData, now})` → `{form, output}`). `src/js/state.js` is the DOM-bound wrapper that the browser loads; the off-line scripts call `pureState` directly. The cross-product axes (`PROFILES`, `PQ_MODES`, `GUIDELINES`, filename↔fragment helpers) live in `src/js/grid-axes.js`; `test/_helpers/fixtures.js` re-exports `PROFILES` and `PQ_MODES` from there so there is one source of truth.
+
+Both the grid generator and the snapshot test pin the rendered `generated YYYY-MM-DD …` header to a fixed date (`1970-01-01`) — re-running `npm run render-grid` on a different day must not churn every file.
+
 ## Tests
 
 The test runner is Node's built-in `node:test`, with `@babel/register`
@@ -72,7 +107,10 @@ preloaded so test files can `import` the ES-module helpers in
 
 | Command                                                                                                | What it does                                                                |
 | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
-| `npm test`                                                                                             | Run every `test/*.test.js`.                                                 |
+| `npm test`                                                                                             | Run every `test/*.test.js` (invariants + grid snapshots).                   |
+| `npm run render-grid`                                                                                  | Re-render `fixtures/grid/**` from the current renderer + helpers (use this whenever a helper change intentionally moves the snapshot baseline). |
+| `npm run render-grid -- --server nginx --only-changed`                                                 | Restrict to one helper, write only the cells whose content changed.         |
+| `npm run screenshots -- --server nginx --pq hybrid`                                                    | Write a PNG to `fixtures/screenshots/`. Requires `npm install --save-dev playwright` + `npx playwright install chromium`. |
 | `node --require @babel/register --test test/openldap.test.js`                                          | Run a single helper's tests.                                                |
 | `node --require @babel/register --test --test-name-pattern='PQ' test/*.test.js`                        | Run only tests whose names match a regex.                                   |
 | `node --require @babel/register --test --experimental-test-coverage test/*.test.js`                    | Print a per-file coverage table to stdout (Node ≥ 22 built-in coverage).    |

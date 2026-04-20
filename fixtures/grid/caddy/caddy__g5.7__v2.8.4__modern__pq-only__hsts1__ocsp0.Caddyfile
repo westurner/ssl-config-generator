@@ -1,0 +1,20 @@
+# generated 1970-01-01, Mozilla Guideline v5.7, Caddy 2.8.4, modern config, PQ: only, HSTS
+# https://ssl-config.mozilla.org/#server=caddy&version=2.8.4&config=modern&hsts&guideline=5.7&pq=only
+
+# replace example.com with your domain name
+example.com {
+
+  tls {
+    # Note: Caddy automatically configures safe TLS settings,
+    # so 'ciphers' and 'curves' may safely be commented out to use Caddy defaults.
+
+    # PQ-only: Caddy currently only exposes the X25519MLKEM768 hybrid
+    # group (other PQ groups from the guideline are filtered out).
+    curves x25519mlkem768
+    protocols tls1.3
+  }
+
+  # HSTS (63072000 seconds)
+  header Strict-Transport-Security "max-age=63072000; includeSubDomains"
+
+}

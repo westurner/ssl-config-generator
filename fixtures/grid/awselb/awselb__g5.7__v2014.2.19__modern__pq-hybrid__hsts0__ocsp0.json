@@ -1,0 +1,34 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Mozilla ELB configuration generated 1970-01-01, https://ssl-config.mozilla.org/#server=awselb&version=2014.2.19&config=modern&guideline=5.7
+Parameters:
+  SSLCertificateId:
+    Description: The ARN of the ACM SSL certificate to use
+    Type: String
+    AllowedPattern: ^arn:aws:acm:[^:]*:[^:]*:certificate/.*$
+    ConstraintDescription: >
+      SSL Certificate ID must be a valid ACM ARN.
+      https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html#genref-arns
+Resources:
+  ExampleELB:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      Listeners:
+        - LoadBalancerPort: '443'
+          InstancePort: '80'
+          PolicyNames:
+            - Mozilla-modern-v5-0
+          SSLCertificateId: !Ref SSLCertificateId
+          Protocol: HTTPS
+      AvailabilityZones:
+        Fn::GetAZs: !Ref 'AWS::Region'
+      Policies:
+        - PolicyName: Mozilla-modern-v5-0
+          PolicyType: SSLNegotiationPolicyType
+          Attributes:
+            - Name: Server-Defined-Cipher-Order
+              Value: false
+
+Outputs:
+  ELBURL:
+    Description: URL of the ELB load balancer
+    Value: !Join [ '', [ 'https://', !GetAtt 'ExampleELB.DNSName', '/' ] ]
