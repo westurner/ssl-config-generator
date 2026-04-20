@@ -234,6 +234,20 @@ module.exports = {
     supportsOcspStapling: '1.3.6',
     tls13: '1.3.7',
   },
+  python: {
+    latestVersion: '3.13.1',
+    eolBefore: '3.10.0',
+    name: 'Python (ssl module)',
+    showSupports: false,
+    supportsHsts: false,
+    supportsPq: true,
+    tls13: '3.7.0',
+    usesOpenssl: true,
+    // Python's ssl module wraps OpenSSL. SSLContext.set_groups() (multi-
+    // group preference list incl. X25519MLKEM768) was added in Python
+    // 3.13; older 3.x can pin a single curve via set_ecdh_curve(). The
+    // underlying OpenSSL must be 3.5+ for built-in ML-KEM hybrids.
+  },
   redis: {
     latestVersion: '7.4.1',
     eolBefore: '7.4.0',
