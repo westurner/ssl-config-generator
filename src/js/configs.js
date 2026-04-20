@@ -196,6 +196,24 @@ module.exports = {
     usesOpenssl: false,
     // rustls 0.23.18 (aws-lc-rs provider) negotiates X25519MLKEM768.
   },
+  s2n: {
+    latestVersion: '1.7.2',
+    eolBefore: '1.5.0',
+    name: 's2n-tls',
+    showSupports: false,
+    supportsHsts: false,
+    // s2n_config_set_status_request_type(config, S2N_STATUS_REQUEST_OCSP) has
+    // been part of the public API since the very first releases.
+    supportsOcspStapling: '1.0.0',
+    // First s2n release with TLS 1.3 enabled by default in the named policies
+    // ("default_tls13" was introduced in the v1.0.0 series; TLS 1.3 support
+    // landed in security policy "20190801").
+    tls13: '1.0.0',
+    usesOpenssl: false,
+    // s2n-tls is configured via named security policies passed to
+    // s2n_config_set_cipher_preferences(); cipher / curve lists are not
+    // user-tunable. default_pq adds X25519MLKEM768 hybrid PQ key exchange.
+  },
   squid: {
     latestVersion: '6.12',
     eolBefore: '6.0',
