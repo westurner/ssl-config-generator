@@ -184,14 +184,12 @@
       <p class="text-muted small">
         Per-helper attributes from
         <a href="https://github.com/mozilla/ssl-config-generator/blob/master/src/js/configs.js"><code>src/js/configs.js</code></a>.
-        A <code>—</code> in any of the capability columns means the
-        helper entry omitted that flag (it is <em>unspecified</em>); the
-        runtime treats omitted as enabled for the booleans, but the
-        table surfaces the gap explicitly so contributors can spot
-        helpers that haven't been audited yet. <em>Cipher format</em>
-        defaults to <code>openssl</code>. A version string in any of
-        the capability columns denotes the first upstream release with
-        that feature.
+        Every helper declares an explicit value for each capability
+        column — <code>yes</code>, <code>no</code>, or the first upstream
+        release that surfaced the feature. <code>—</code> appears only
+        for non-applicable bookkeeping rows (e.g. the standalone
+        <code>openssl</code> entry that has no helper of its own).
+        <em>Cipher format</em> defaults to <code>openssl</code>.
       </p>
       <div class="table-responsive">
         <table class="table table-sm table-striped table-bordered table-hover" aria-labelledby="helpers-table-heading">
@@ -214,10 +212,13 @@
               // Capability flags surface three states in the table:
               //   - true / version string  → "yes" or the version
               //   - false                  → "no"
-              //   - undefined / null       → "—" (helper hasn't declared
-              //                              the flag; runtime treats
-              //                              omitted as enabled but the
-              //                              table flags it for follow-up)
+              //   - undefined / null       → "—" (only legitimate for
+              //                              non-helper rows like the
+              //                              standalone openssl entry;
+              //                              every helper MUST declare
+              //                              all six capability flags
+              //                              explicitly — see the
+              //                              header of configs.js)
               const cap = (v) => {
                 if (v === undefined || v === null) return '—';
                 if (typeof v === 'string') return v;

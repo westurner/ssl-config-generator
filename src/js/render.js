@@ -75,10 +75,16 @@ export default function pureState({
   // ALWAYS present so a reader can tell at a glance which mode the
   // file was generated in (the previous shorthand silently elided the
   // negative cases).
-  const hstsOn = configs[server].supportsHsts !== false && !!hsts;
+  // Every helper in src/js/configs.js now declares an explicit value
+  // (true / false / version-string) for every capability column rendered
+  // in the "Supported software & capabilities" table. That contract is
+  // what makes the simple truthy gate below safe — there are no longer
+  // any helpers whose flag is omitted, so the historical "treat absence
+  // as enabled" workaround is no longer required.
+  const hstsOn = !!configs[server].supportsHsts && !!hsts;
   const ocspOn = !!supportsOcspStapling && !!ocsp;
   let fragment = `server=${server}&version=${serverVersion}&config=${config}`;
-  if (configs[server].usesOpenssl !== false) {
+  if (configs[server].usesOpenssl) {
     fragment += `&openssl=${opensslVersion}`;
   }
   fragment += `&guideline=${guideline}`;
@@ -108,7 +114,7 @@ export default function pureState({
     version_tags += ', PQ: hybrid';
   }
   if (pqEffective !== 'none'
-      && configs[server].usesOpenssl !== false
+      && configs[server].usesOpenssl
       && !minver('3.5.0', opensslVersion)) {
     version_tags += ' (WARNING: OpenSSL < 3.5.0 lacks built-in ML-KEM)';
   }
@@ -118,7 +124,7 @@ export default function pureState({
   // generate the header
   const date = now.toISOString().substr(0, 10);
   let header = `generated ${date}, Mozilla Guideline v${guideline}, ${version_tags}`;
-  header += configs[server].supportsHsts !== false && hsts ? ', HSTS' : '';
+  header += !!configs[server].supportsHsts && hsts ? ', HSTS' : '';
   header += supportsOcspStapling && ocsp ? ', OCSP' : '';
 
   const link = `${origin}${pathname}#${fragment}`;
@@ -143,7 +149,7 @@ export default function pureState({
     ciphers = ciphers.slice();
   }
   if (ciphers.length && ciphers[0] === '@SECLEVEL=0') ciphers.shift();
-  if (configs[server].usesOpenssl !== false && minver('3.0.0', opensslVersion)) {
+  if (configs[server].usesOpenssl && minver('3.0.0', opensslVersion)) {
     if (protocols.includes('TLSv1.1')) ciphers.unshift('@SECLEVEL=0');
   }
 
@@ -166,7 +172,7 @@ export default function pureState({
   return {
     form: {
       config,
-      hsts: !!hsts && configs[server].supportsHsts !== false,
+      hsts: !!hsts && !!configs[server].supportsHsts,
       ocsp: !!ocsp && !!supportsOcspStapling,
       opensslVersion,
       pq: pqEffective,
@@ -183,14 +189,12 @@ export default function pureState({
       dhParamSize: ssc.dh_param_size,
       fragment,
       // Capability-flag exposure rule: pass through whatever the
-      // configs.js entry declared, and surface `null` when it omitted
-      // the key entirely. Downstream consumers (index.js, helpers,
-      // the capability table) MUST treat `null` as "unspecified" — the
-      // table renders '—', runtime gating in this file keeps using
-      // `!== false` so an omitted flag still behaves as enabled. This
-      // makes the difference between "the helper author affirmatively
-      // declared yes/no" and "no statement on file" visible to
-      // operators.
+      // configs.js entry declared. Every helper now declares an
+      // explicit value (true / false / version-string) for the six
+      // capability-table columns, so `?? null` here is just defense in
+      // depth — the table never has to render '—' for a built-in
+      // helper, and runtime gating in this file uses the simple
+      // `!!flag` truthy check (see `hstsOn` / `usesOpenssl` above).
       hasVersions:             configs[server].hasVersions             ?? null,
       header,
       hstsMaxAge: ssc.hsts_min_age,

@@ -3,42 +3,38 @@
 // Capability-flag conventions
 // ---------------------------
 // Each `supports*` / `usesOpenssl` / `showSupports` / `hasVersions`
-// flag accepts FOUR shapes — and the rendered helpers capability table
+// flag accepts THREE shapes — and the rendered helpers capability table
 // in src/templates/index.ejs (the one served at the bottom of the
-// site) surfaces all four states explicitly:
+// site) surfaces all three states explicitly:
 //
 //   - '<ver>'   → the first upstream release that surfaced the feature.
 //                 The string is documentation-only; runtime gating in
 //                 src/js/render.js coerces these flags to a boolean via
-//                 `!== false`, and `eolBefore` decides which historical
+//                 `!!`, and `eolBefore` decides which historical
 //                 versions are even selectable in the UI. The table
 //                 displays the version string verbatim.
 //   - true      → "supported, version unknown / not yet recorded".
 //   - false     → not supported by this helper at all (table: "no").
-//   - (omitted) → UNSPECIFIED. The renderer treats omitted as enabled
-//                 for the booleans (HSTS, cipher/curve selection,
-//                 usesOpenssl, showSupports, hasVersions) so existing
-//                 behaviour is preserved. The capability table renders
-//                 a literal `—` so contributors can see at a glance
-//                 which helper × capability cells haven't been audited
-//                 and need a yes/no/version-string declaration. Prefer
-//                 explicit values over omissions in new entries.
 //
-// hasVersions, showSupports, supportsHsts, and usesOpenssl historically
-// only needed to be defined if false — that runtime default is preserved
-// (omitted == enabled) but new entries SHOULD declare the flag
-// explicitly so the table doesn't render `—`.
+// Every helper MUST declare an explicit value (true / false / version
+// string) for every column rendered in the capability table — there
+// are no longer any cells that fall back to a runtime default. The
+// renderer's gating uses a simple `!!flag` truthy check (see the
+// `hstsOn` / `usesOpenssl` sites in src/js/render.js); that's only safe
+// because of this contract. Adding a new helper without all six
+// capability flags will surface as a literal `—` in the table and is a
+// bug — fix the configs.js entry, do not weaken the runtime gate.
 //
-// supportsPq is assumed FALSE at runtime unless explicitly set: a helper
-// opts IN by declaring it has a PQ-aware render branch today
-// (X25519MLKEM768 / SecP256r1MLKEM768 / SecP384r1MLKEM1024 codepoints,
-// or a managed-policy alias like s2n-tls 'default_pq' that negotiates
-// ML-KEM hybrids automatically). Helpers that have NO PQ surface
-// whatsoever (no group token, no comment, no policy alias) leave the
-// flag unset. The capability matrix surfaced by this flag answers the
-// operator question "is this server even ABLE to negotiate post-quantum
-// key exchange today?" — orthogonal to the per-curve / per-cipher
-// mitigation-latency flags below.
+// Per-flag semantics
+// ------------------
+// supportsPq answers the operator question "is this server even ABLE to
+// negotiate post-quantum key exchange today?" — orthogonal to the
+// per-curve / per-cipher mitigation-latency flags below. A helper opts
+// IN by declaring it has a PQ-aware render branch today (X25519MLKEM768
+// / SecP256r1MLKEM768 / SecP384r1MLKEM1024 codepoints, or a managed-
+// policy alias like s2n-tls 'default_pq' that negotiates ML-KEM hybrids
+// automatically). Helpers that have NO PQ surface whatsoever (no group
+// token, no comment, no policy alias) MUST set this to `false`.
 //   - supportsPq:'<ver>' → helper has a PQ-aware codepath in src/js/helpers/;
 //                          the value is the first upstream release that
 //                          surfaced PQ key exchange (mirrors how `tls13` and
@@ -47,24 +43,24 @@
 //                          output.supportsPq.
 //   - supportsPq:true    → also accepted (treated as "supports PQ, version
 //                          unknown / not yet recorded").
-//   - (omitted)          → no PQ surface; the helper ignores form.pq and
-//                          the table renders `—`.
+//   - supportsPq:false   → no PQ surface; the helper ignores form.pq.
 //
 // supportsCipherSelection, supportsCurveSelection, and supportsHsts
-// historically defaulted to "yes" when omitted. That runtime default is
-// preserved (state.js / render.js still gate via `!== false`) but new
-// entries SHOULD set them explicitly. Each accepts the same value
-// shapes as `supportsPq` / `supportsOcspStapling`:
+// each accept the same value shapes as `supportsPq` /
+// `supportsOcspStapling`:
 //   - supportsCipherSelection:false  → the helper cannot emit a per-cipher list
-//                                      (e.g. AWS ALB / s2n-tls expose only named
-//                                      "policy" identifiers).
+//                                      (e.g. AWS ALB / s2n-tls / rustls expose
+//                                      only named "policy" identifiers).
 //   - supportsCurveSelection:false   → the helper cannot express a TLS named-group
 //                                      / curve preference (e.g. MySQL, Tomcat,
 //                                      Jetty, Redis, Squid, AWS ELB/ALB, s2n-tls,
 //                                      rustls, the LiteSpeed family, Coturn,
 //                                      OracleHTTP).
 //   - supportsHsts:false             → not an HTTP server (Postfix, Dovecot,
-//                                      OpenLDAP, Coturn, MySQL, …).
+//                                      OpenLDAP, Coturn, MySQL, …) — and the
+//                                      helper does not emit any HSTS-related
+//                                      artifact (header, redirect, etc.) when
+//                                      form.hsts is set.
 //
 //   Why this matters (security): being able to specify ciphers / curves
 //   explicitly in a server config is itself a security-hardening feature.
@@ -92,6 +88,11 @@ module.exports = {
     latestVersion: '2.4.60',
     eolBefore: '2.4.0',
     name: 'Apache',
+    // mod_ssl is built on OpenSSL.
+    usesOpenssl: true,
+    // SSLCipherSuite has been in mod_ssl since Apache httpd 2.0
+    // (the original mod_ssl merge into the httpd 2.0 tree).
+    supportsCipherSelection: '2.0.0',
     // SSLOpenSSLConfCmd Curves landed in Apache httpd 2.4.7
     // (mod_ssl, Nov 2013); see helpers/apache.js:68
     // (`minver("2.4.11", form.serverVersion)` for the directive choice and
@@ -103,6 +104,10 @@ module.exports = {
     // header, mod_headers is what emits it.)
     supportsHsts: '2.0.0',
     supportsOcspStapling: '2.4.13',
+    // No PQ-aware code path in src/js/helpers/apache.js today; PQ key
+    // exchange depends on the linked OpenSSL but the helper does not
+    // emit a hybrid-group token or PQ comment.
+    supportsPq: false,
     tls13: '2.4.36',
   },
   awsalb: {
@@ -112,7 +117,15 @@ module.exports = {
     showSupports: false,
     supportsCipherSelection: false,
     supportsCurveSelection: false,
+    // ALB has no native HSTS header knob, but the helper renders a
+    // separate HTTP→HTTPS redirect listener when form.hsts is set
+    // (helpers/awsalb.js:4-25); that's the closest ALB-native artifact
+    // to "operator opted into HSTS", so keep this true so the toggle
+    // remains user-visible.
+    supportsHsts: true,
     supportsOcspStapling: false,
+    // ALB managed policies do not yet expose a hybrid-PQ option.
+    supportsPq: false,
     tls13: '2023.3.22',
     usesOpenssl: false,
   },
@@ -123,8 +136,15 @@ module.exports = {
     latestVersion: '2014.2.19',
     name: 'AWS ELB',
     supportedCiphers: ['ECDHE-ECDSA-AES128-GCM-SHA256', 'ECDHE-RSA-AES128-GCM-SHA256', 'ECDHE-ECDSA-AES128-SHA256', 'ECDHE-RSA-AES128-SHA256', 'ECDHE-ECDSA-AES128-SHA', 'ECDHE-RSA-AES128-SHA', 'DHE-RSA-AES128-SHA', 'ECDHE-ECDSA-AES256-GCM-SHA384', 'ECDHE-RSA-AES256-GCM-SHA384', 'ECDHE-ECDSA-AES256-SHA384', 'ECDHE-RSA-AES256-SHA384', 'ECDHE-RSA-AES256-SHA', 'ECDHE-ECDSA-AES256-SHA', 'AES128-GCM-SHA256', 'AES128-SHA256', 'AES128-SHA', 'AES256-GCM-SHA384', 'AES256-SHA256', 'AES256-SHA', 'DHE-DSS-AES128-SHA', 'CAMELLIA128-SHA', 'EDH-RSA-DES-CBC3-SHA', 'DES-CBC3-SHA', 'ECDHE-RSA-RC4-SHA', 'RC4-SHA', 'ECDHE-ECDSA-RC4-SHA', 'DHE-DSS-AES256-GCM-SHA384', 'DHE-RSA-AES256-GCM-SHA384', 'DHE-RSA-AES256-SHA256', 'DHE-DSS-AES256-SHA256', 'DHE-RSA-AES256-SHA', 'DHE-DSS-AES256-SHA', 'DHE-RSA-CAMELLIA256-SHA', 'DHE-DSS-CAMELLIA256-SHA', 'CAMELLIA256-SHA', 'EDH-DSS-DES-CBC3-SHA', 'DHE-DSS-AES128-GCM-SHA256', 'DHE-RSA-AES128-GCM-SHA256', 'DHE-RSA-AES128-SHA256', 'DHE-DSS-AES128-SHA256', 'DHE-RSA-CAMELLIA128-SHA', 'DHE-DSS-CAMELLIA128-SHA', 'ADH-AES128-GCM-SHA256', 'ADH-AES128-SHA', 'ADH-AES128-SHA256', 'ADH-AES256-GCM-SHA384', 'ADH-AES256-SHA', 'ADH-AES256-SHA256', 'ADH-CAMELLIA128-SHA', 'ADH-CAMELLIA256-SHA', 'ADH-DES-CBC3-SHA', 'ADH-DES-CBC-SHA', 'ADH-RC4-MD5', 'ADH-SEED-SHA', 'DES-CBC-SHA', 'DHE-DSS-SEED-SHA', 'DHE-RSA-SEED-SHA', 'EDH-DSS-DES-CBC-SHA', 'EDH-RSA-DES-CBC-SHA', 'IDEA-CBC-SHA', 'RC4-MD5', 'SEED-SHA', 'DES-CBC3-MD5', 'DES-CBC-MD5', 'RC2-CBC-MD5', 'PSK-AES256-CBC-SHA', 'PSK-3DES-EDE-CBC-SHA', 'KRB5-DES-CBC3-SHA', 'KRB5-DES-CBC3-MD5', 'PSK-AES128-CBC-SHA', 'PSK-RC4-SHA', 'KRB5-RC4-SHA', 'KRB5-RC4-MD5', 'KRB5-DES-CBC-SHA', 'KRB5-DES-CBC-MD5', 'EXP-EDH-RSA-DES-CBC-SHA', 'EXP-EDH-DSS-DES-CBC-SHA', 'EXP-ADH-DES-CBC-SHA', 'EXP-DES-CBC-SHA', 'EXP-RC2-CBC-MD5', 'EXP-KRB5-RC2-CBC-SHA', 'EXP-KRB5-DES-CBC-SHA', 'EXP-KRB5-RC2-CBC-MD5', 'EXP-KRB5-DES-CBC-MD5', 'EXP-ADH-RC4-MD5', 'EXP-RC4-MD5', 'EXP-KRB5-RC4-SHA', 'EXP-KRB5-RC4-MD5'],
+    // ELB exposes a per-cipher allowlist via the SSLNegotiationPolicyType
+    // PolicyAttributes (see helpers/awselb.js:14-22).
+    supportsCipherSelection: true,
     supportsCurveSelection: false,
     supportsHsts: false,
+    // Classic ELB does not support OCSP stapling.
+    supportsOcspStapling: false,
+    // No PQ-capable named cipher policy on Classic ELB.
+    supportsPq: false,
     usesOpenssl: false,
   },
   caddy: {
@@ -139,6 +159,9 @@ module.exports = {
     supportsCipherSelection: '2.0.0',
     supportsCurveSelection: '2.0.0',
     supportsHsts: '2.0.0',
+    // Caddy automatically manages OCSP stapling out-of-band; no
+    // operator-tunable stapling directive is emitted by helpers/caddy.js.
+    supportsOcspStapling: false,
     // Caddy 2.10.0 (Apr 2025) shipped support for the standardised
     // X25519MLKEM768 hybrid PQ group by default. Earlier 2.x had only
     // experimental Kyber drafts via Go's crypto/tls.
@@ -150,8 +173,16 @@ module.exports = {
     latestVersion: '4.6.2',
     name: 'Coturn',
     showSupports: false,
+    // coturn links libssl/libcrypto for DTLS/TLS.
+    usesOpenssl: true,
+    // helpers/coturn.js:13 emits `cipher-list=...` from output.ciphers.
+    supportsCipherSelection: true,
     supportsCurveSelection: false,
     supportsHsts: false,
+    // No `cert-staple` / OCSP directive in helpers/coturn.js.
+    supportsOcspStapling: false,
+    // No PQ-aware code path.
+    supportsPq: false,
     tls13: '4.6.2',
   },
   dovecot: {
@@ -159,11 +190,22 @@ module.exports = {
     eolBefore: '2.2.36', // https://dovecot.org/list/dovecot/2018-August/112536.html
     name: 'Dovecot',
     showSupports: false,
+    // Dovecot links OpenSSL for its TLS implementation.
+    usesOpenssl: true,
+    // ssl_cipher_list (renamed to ssl_cipher_suites in 2.4) has been a
+    // documented Dovecot directive since the 2.0 series; helpers/dovecot.js:43
+    // emits it from output.ciphers.
+    supportsCipherSelection: true,
     supportsHsts: false,
     // ssl_curve_list (renamed to ssl_curves in 2.4) was added in Dovecot
     // 2.2.6 (Jul 2014). Earlier 2.2.x had no per-curve knob and used
     // OpenSSL's compiled-in default group preference.
     supportsCurveSelection: '2.2.6',
+    // No OCSP-stapling directive in helpers/dovecot.js.
+    supportsOcspStapling: false,
+    // No PQ-aware code path; PQ key exchange depends on linked OpenSSL
+    // but the helper does not emit a hybrid-group token or comment.
+    supportsPq: false,
     tls13: '2.3.15',
   },
   exim: {
@@ -171,12 +213,24 @@ module.exports = {
     eolBefore: '4.98',
     name: 'Exim',
     showSupports: false,
+    // Exim's TLS layer is OpenSSL (or GnuTLS at build time); helpers/exim.js
+    // assumes the OpenSSL build (openssl_options).
+    usesOpenssl: true,
+    // helpers/exim.js:23 emits `tls_require_ciphers = ...` from
+    // output.ciphers; this directive has been part of Exim's TLS support
+    // since the early 4.x series.
+    supportsCipherSelection: true,
+    // Exim is a mail server (no HTTP layer); HSTS does not apply.
     supportsHsts: false,
     // tls_eccurve was added in Exim 4.80 (May 2012) for the GnuTLS build
     // and extended to OpenSSL builds with the helper-noted gate of
     // 4.97 + OpenSSL 1.1.1 (helpers/exim.js:17). The capability statement
     // is "first upstream release that surfaced the directive".
     supportsCurveSelection: '4.80',
+    // No OCSP-stapling directive emitted by helpers/exim.js.
+    supportsOcspStapling: false,
+    // No PQ-aware code path.
+    supportsPq: false,
     tls13: '4.92.0',
   },
   go: {
@@ -191,6 +245,12 @@ module.exports = {
     // knob.
     supportsCipherSelection: '1.5.0',
     supportsCurveSelection: '1.5.0',
+    // helpers/go.js:20-23 writes the Strict-Transport-Security response
+    // header from Go application code when form.hsts is set.
+    supportsHsts: true,
+    // No crypto/tls API for OCSP stapling is used by helpers/go.js;
+    // applications would have to wire it up themselves.
+    supportsOcspStapling: false,
     // Go 1.24 (Feb 2025) added X25519MLKEM768 to crypto/tls and enabled
     // it in the default group preference list.
     supportsPq: '1.24.0',
@@ -203,7 +263,16 @@ module.exports = {
     eolBefore: '3.8.0',
     name: 'GnuTLS',
     showSupports: false,
+    // helpers/gnutls.js:88-100 emits +AES-128-GCM/+AES-256-GCM/
+    // +CHACHA20-POLY1305 (and legacy CBC tokens for the "old" profile)
+    // as part of the priority string.
+    supportsCipherSelection: true,
+    // helpers/gnutls.js:54-81 emits +GROUP-* tokens (GROUP-X25519,
+    // GROUP-SECP256R1, ...) from output.tlsCurves.
+    supportsCurveSelection: true,
     supportsHsts: false,
+    // No OCSP-stapling token emitted by helpers/gnutls.js.
+    supportsOcspStapling: false,
     // GnuTLS 3.8.10 (Mar 2025) added the GROUP-X25519-MLKEM768 hybrid
     // group; gated by minver('3.8.10', ...) in src/js/helpers/gnutls.js.
     supportsPq: '3.8.10',
@@ -215,6 +284,8 @@ module.exports = {
     latestVersion: '3.0',
     eolBefore: '2.2',
     name: 'HAProxy',
+    // HAProxy links OpenSSL for its TLS layer.
+    usesOpenssl: true,
     // ssl-default-bind-ciphers / -ciphersuites in the global section
     // landed in HAProxy 1.5 (Jun 2014); see helpers/haproxy.js:5
     // (`if (!minver("1.5.0", ...))` bail-out: the entire SSL section
@@ -229,6 +300,13 @@ module.exports = {
     // HAProxy 1.5+ (the `http-response` ruleset family arrived with the
     // 1.5 SSL/HTTP overhaul).
     supportsHsts: '1.5.0',
+    // No OCSP-stapling directive emitted by helpers/haproxy.js (HAProxy
+    // does support stapling via an external file; the helper does not
+    // wire it).
+    supportsOcspStapling: false,
+    // No PQ-aware code path; PQ key exchange depends on the linked
+    // OpenSSL but the helper does not emit a hybrid-group token.
+    supportsPq: false,
     tls13: '1.8.0',
   },
   iis: {
@@ -247,6 +325,9 @@ module.exports = {
     // (Windows 10 v1709 / Windows Server, version 1709, build
     // 10.0.16299); see helpers/iis.js:26-28.
     supportsHsts: '10.0.16299',
+    // Schannel handles OCSP stapling automatically; helpers/iis.js does
+    // not emit any operator-tunable stapling directive.
+    supportsOcspStapling: false,
     // Hybrid ML-KEM in Schannel/SymCrypt is exposed on Windows Server
     // 2025 / Win 11 24H2 (Insider builds) — first build numbered
     // 10.0.26100; group string MLKEM768X25519.
@@ -265,8 +346,14 @@ module.exports = {
     latestVersion: '12.0.15',
     eolBefore: '12.0.0',
     name: 'Jetty',
+    // helpers/jetty.js:31-41 emits an IncludeCipherSuites array.
+    supportsCipherSelection: true,
     supportsCurveSelection: false,
     supportsHsts: false,
+    // No OCSP-stapling element emitted by helpers/jetty.js.
+    supportsOcspStapling: false,
+    // No PQ-aware code path.
+    supportsPq: false,
     tls13: '9.4.12',
     usesOpenssl: false,
   },
@@ -274,15 +361,41 @@ module.exports = {
     latestVersion: '1.4.82',
     eolBefore: '1.4.69',
     name: 'lighttpd',
+    // helpers/lighttpd.js targets the mod_openssl backend by default.
+    usesOpenssl: true,
+    // helpers/lighttpd.js:83/87 emits ssl.openssl.ssl-conf-cmd
+    // ("CipherString" => …) (or the legacy ssl.cipher-list) from
+    // output.ciphers.
+    supportsCipherSelection: true,
+    // helpers/lighttpd.js:64 emits ssl.openssl.ssl-conf-cmd ("Curves" => …)
+    // from output.tlsCurves on lighttpd 1.4.50+ (when ssl-conf-cmd was
+    // introduced).
+    supportsCurveSelection: '1.4.50',
+    // helpers/lighttpd.js:174-202 emits HSTS via mod_setenv /
+    // mod_redirect; mod_setenv (and the response-header form used here)
+    // has been part of the 1.4 series since well before 1.4.46.
+    supportsHsts: true,
     supportsOcspStapling: '1.4.56',
+    // No PQ-aware code path; PQ groups depend on linked OpenSSL but
+    // lighttpd does not emit a hybrid-group token.
+    supportsPq: false,
     tls13: '1.4.48',
   },
   litespeed: {
     latestVersion: '6.3.5',
     eolBefore: '5.4.12',
     name: 'LiteSpeed',
+    // LiteSpeed Web Server uses OpenSSL.
+    usesOpenssl: true,
+    // helpers/litespeed.js:22 emits `ciphers ...` from output.ciphers.
+    supportsCipherSelection: true,
     supportsCurveSelection: false,
+    // helpers/litespeed.js:46-53 emits an HSTS Header in a `context`
+    // block when form.hsts is set.
+    supportsHsts: true,
     supportsOcspStapling: '1.2',
+    // No PQ-aware code path.
+    supportsPq: false,
     tls13: '5.4.12',
   },
   mysql: {
@@ -290,14 +403,31 @@ module.exports = {
     eolBefore: '8.0.0',
     name: 'MySQL',
     showSupports: false,
+    // MySQL builds against OpenSSL (or YaSSL/wolfSSL historically).
+    usesOpenssl: true,
+    // helpers/mysql.js:13 emits `ssl-cipher = ...` from output.ciphers.
+    supportsCipherSelection: true,
     supportsCurveSelection: false,
     supportsHsts: false,
+    // No OCSP-stapling directive in helpers/mysql.js.
+    supportsOcspStapling: false,
+    // No PQ-aware code path.
+    supportsPq: false,
     tls13: '8.0.16',
   },
   nginx: {
     latestVersion: '1.27.3',
     eolBefore: '1.26.0',
     name: 'nginx',
+    // nginx links OpenSSL for its TLS layer.
+    usesOpenssl: true,
+    // helpers/nginx.js:42-46 emits `ssl_ciphers ...` from output.ciphers
+    // (directive present since the early 0.x ngx_http_ssl_module).
+    supportsCipherSelection: true,
+    // helpers/nginx.js:41 emits `ssl_ecdh_curve ...` from
+    // output.tlsCurves; the directive has been part of nginx for a very
+    // long time.
+    supportsCurveSelection: true,
     // The `always` parameter on `add_header` (used by the helper to emit
     // HSTS so the header is set on error responses too) was added in
     // nginx 1.7.5; see helpers/nginx.js:33. Earlier nginx supported
@@ -306,6 +436,9 @@ module.exports = {
     // response over a secure transport).
     supportsHsts: '1.7.5',
     supportsOcspStapling: '1.3.7',
+    // No PQ-aware code path; PQ key exchange depends on linked OpenSSL
+    // but the helper does not emit a hybrid-group token or PQ comment.
+    supportsPq: false,
     tls13: '1.13.0',
   },
   openssl: {
@@ -318,12 +451,22 @@ module.exports = {
     eolBefore: '3.0.0',
     name: 'OpenSSL config (openssl.cnf)',
     showSupports: false,
+    // openssl.cnf is OpenSSL's own configuration file.
+    usesOpenssl: true,
+    // helpers/opensslcnf.js:79-88 emits CipherString / Ciphersuites from
+    // output.ciphers / output.cipherSuites; SSL_CONF "CipherString" /
+    // "Ciphersuites" have been the canonical openssl.cnf cipher knobs
+    // since the SSL_CONF API was introduced in OpenSSL 1.0.2 / 1.1.0.
+    supportsCipherSelection: true,
     supportsHsts: false,
     // The `Groups` SSL_CONF command (the openssl.cnf form of
     // `-groups`/`SSL_CONF_cmd("Groups", ...)`) was added in OpenSSL 1.1.1
     // when the named-group preference list replaced the older
     // `Curves` command for TLS 1.3.
     supportsCurveSelection: '1.1.1',
+    // openssl.cnf has no per-application OCSP-stapling switch (stapling
+    // is wired up by each application that calls SSL_CTX_set_tlsext_*).
+    supportsOcspStapling: false,
     // OpenSSL 3.5.0 (Apr 2025) shipped built-in ML-KEM hybrid groups
     // (X25519MLKEM768, SecP256r1MLKEM768, SecP384r1MLKEM1024); gated by
     // minver('3.5.0', form.opensslVersion) in src/js/helpers/opensslcnf.js.
@@ -336,8 +479,16 @@ module.exports = {
     latestVersion: '1.8.5',
     eolBefore: '1.4.35',
     name: 'OpenLiteSpeed',
+    // OpenLiteSpeed uses OpenSSL.
+    usesOpenssl: true,
+    // helpers/openlitespeed.js:33 emits `<ciphers>...` from output.ciphers.
+    supportsCipherSelection: true,
     supportsCurveSelection: false,
+    // helpers/openlitespeed.js:46-58 emits HSTS via `<extraHeaders>`.
+    supportsHsts: true,
     supportsOcspStapling: '1.2',
+    // No PQ-aware code path.
+    supportsPq: false,
     tls13: '1.4.35',
   },
   openldap: {
@@ -345,6 +496,12 @@ module.exports = {
     eolBefore: '2.6.0',
     name: 'OpenLDAP (slapd)',
     showSupports: false,
+    // slapd links the system's OpenSSL (or GnuTLS at build time);
+    // helpers/openldap.js targets the OpenSSL build.
+    usesOpenssl: true,
+    // helpers/openldap.js emits `TLSCipherSuite ...` for the TLSv1.2
+    // and earlier cipher list.
+    supportsCipherSelection: true,
     supportsHsts: false,
     supportsOcspStapling: false,
     // TLSECName (slapd.conf) / olcTLSECName (cn=config) was added in
@@ -370,12 +527,19 @@ module.exports = {
     cipherFormat: 'iana',
     latestVersion: '12.2.1',
     name: 'Oracle HTTP',
+    // helpers/oraclehttp.js:35 emits `SSLCipherSuite ...` from output.ciphers.
+    supportsCipherSelection: true,
     supportsCurveSelection: false,
+    // helpers/oraclehttp.js:23-27 emits the Strict-Transport-Security
+    // header when form.hsts is set.
+    supportsHsts: true,
     // Oracle HTTP Server 12.2.1 (12cR2, Oct 2015) was the first release
     // to ship `SSLOCSPEnable` and the related Oracle-mod_ossl OCSP
     // stapling directives; see helpers/oraclehttp.js:36
     // (`minver("12.2.1", form.serverVersion)`).
     supportsOcspStapling: '12.2.1',
+    // No PQ-aware code path.
+    supportsPq: false,
     usesOpenssl: false,
   },
   postfix: {
@@ -383,12 +547,23 @@ module.exports = {
     eolBefore: '3.6.0',
     name: 'Postfix',
     showSupports: false,
+    // Postfix builds against OpenSSL.
+    usesOpenssl: true,
+    // helpers/postfix.js:42 emits `tls_medium_cipherlist = ...` from
+    // output.ciphers; the `tls_medium_cipherlist` knob has been part of
+    // Postfix since the early 2.x SMTPS support.
+    supportsCipherSelection: true,
     supportsHsts: false,
     // tls_eecdh_auto_curves was added in Postfix 3.4.0 (Feb 2019); see
     // helpers/postfix.js:14 (`minver("3.4.0", form.serverVersion)`).
     // Earlier Postfix could only set a single named curve via
     // smtpd_tls_eecdh_grade + tls_eecdh_strong_curve / _ultra_curve.
     supportsCurveSelection: '3.4.0',
+    // No OCSP-stapling directive emitted by helpers/postfix.js.
+    supportsOcspStapling: false,
+    // No PQ-aware code path; PQ key exchange depends on the linked
+    // OpenSSL but Postfix does not emit a hybrid-group token.
+    supportsPq: false,
     tls13: '3.3.2',
   },
   postgresql: {
@@ -396,6 +571,12 @@ module.exports = {
     eolBefore: '13.0',
     name: 'PostgreSQL',
     showSupports: false,
+    // PostgreSQL builds against OpenSSL.
+    usesOpenssl: true,
+    // helpers/postgresql.js:24 emits `ssl_ciphers = ...` from
+    // output.ciphers; ssl_ciphers has been a libpq/server GUC since the
+    // earliest PostgreSQL TLS support.
+    supportsCipherSelection: true,
     supportsHsts: false,
     // ssl_groups (the per-server TLS named-group preference list) was
     // added in PostgreSQL 18.0; see helpers/postgresql.js:18
@@ -404,6 +585,11 @@ module.exports = {
     // the helper's fallback emit; the capability flag here documents the
     // first release with a true preference-list directive.
     supportsCurveSelection: '18.0.0',
+    // No OCSP-stapling directive in helpers/postgresql.js.
+    supportsOcspStapling: false,
+    // No PQ-aware code path; PQ key exchange depends on the linked
+    // OpenSSL but PostgreSQL does not emit a hybrid-group token.
+    supportsPq: false,
     tls13: '12.0',
   },
   proftpd: {
@@ -411,8 +597,18 @@ module.exports = {
     eolBefore: '1.3.8',  // http://www.proftpd.org/docs/howto/Versioning.html
     name: 'ProFTPD',
     showSupports: false,
+    // ProFTPD's mod_tls links OpenSSL.
+    usesOpenssl: true,
+    // helpers/proftpd.js:39 emits `TLSCipherSuite ...` from output.ciphers.
+    supportsCipherSelection: true,
+    // helpers/proftpd.js:34 emits `TLSECDHCurve ...` from output.tlsCurves
+    // when OpenSSL >= 1.0.2; the directive itself has been part of
+    // mod_tls since the early 1.3.x series.
+    supportsCurveSelection: true,
     supportsHsts: false,
     supportsOcspStapling: '1.3.6',
+    // No PQ-aware code path.
+    supportsPq: false,
     tls13: '1.3.7',
   },
   python: {
@@ -435,6 +631,9 @@ module.exports = {
     // set_ecdh_curve(). The underlying OpenSSL must still be >= 3.5 for
     // built-in ML-KEM hybrids.
     supportsPq: '3.13.0',
+    // Python's `ssl` module does not expose an OCSP-stapling API; OCSP
+    // verification has to be wired by the application or its OpenSSL.
+    supportsOcspStapling: false,
     tls13: '3.7.0',
     usesOpenssl: true,
     // Python's ssl module wraps OpenSSL. SSLContext.set_groups() (multi-
@@ -447,6 +646,8 @@ module.exports = {
     eolBefore: '7.4.0',
     name: 'Redis',
     showSupports: false,
+    // Redis 6+ uses OpenSSL for TLS.
+    usesOpenssl: true,
     supportsCurveSelection: false,
     supportsHsts: false,
     // Redis 6.0.0 (Apr 2020) was the first release with built-in TLS
@@ -454,6 +655,10 @@ module.exports = {
     // directives; see helpers/redis.js:40 (`!minver("6.0", ...)` bail
     // out — the entire TLS config is gated on Redis 6+).
     supportsCipherSelection: '6.0.0',
+    // No OCSP-stapling directive in helpers/redis.js.
+    supportsOcspStapling: false,
+    // No PQ-aware code path.
+    supportsPq: false,
     tls13: '6.0',
   },
   rust: {
@@ -462,8 +667,15 @@ module.exports = {
     eolBefore: '0.23.0',
     name: 'Rust (rustls)',
     showSupports: false,
+    // rustls cipher suites are not user-tunable; the chosen
+    // CryptoProvider (aws-lc-rs / ring) picks them.
+    supportsCipherSelection: false,
     supportsCurveSelection: false,
     supportsHsts: false,
+    // rustls performs OCSP-stapled certificate verification on the
+    // client side automatically; helpers/rust.js does not expose a
+    // server-side stapling toggle.
+    supportsOcspStapling: false,
     // rustls 0.23.18 (Nov 2024, with the aws-lc-rs provider) negotiates
     // X25519MLKEM768 automatically when both peers support it.
     supportsPq: '0.23.18',
@@ -499,21 +711,55 @@ module.exports = {
     eolBefore: '6.0',
     name: 'Squid',
     showSupports: false,
+    // Squid links OpenSSL.
+    usesOpenssl: true,
+    // helpers/squid.js:14-17 emits `cipher=...` (or `tls-cipher=...`)
+    // from output.ciphers.
+    supportsCipherSelection: true,
     supportsCurveSelection: false,
     supportsHsts: false,
+    // No OCSP-stapling directive in helpers/squid.js.
+    supportsOcspStapling: false,
+    // No PQ-aware code path.
+    supportsPq: false,
     tls13: '4',
   },
   stunnel: {
     latestVersion: '5.73',
     name: 'stunnel',
+    // stunnel links OpenSSL.
+    usesOpenssl: true,
+    // helpers/stunnel.js:35 emits `ciphers = ...` from output.ciphers.
+    supportsCipherSelection: true,
+    // helpers/stunnel.js:30 emits `curves = ...` from output.tlsCurves
+    // when OpenSSL >= 1.1.1.
+    supportsCurveSelection: '1.1.1',
     supportsHsts: false,
+    // No OCSP-stapling directive in helpers/stunnel.js.
+    supportsOcspStapling: false,
+    // No PQ-aware code path.
+    supportsPq: false,
     tls13: '5.50',
   },
   tomcat: {
     latestVersion: '11.0.1',
     eolBefore: '9.0.0',
     name: 'Tomcat',
+    // helpers/tomcat.js:67-71 emits `ciphers="…"` from output.ciphers /
+    // output.cipherSuites.
+    supportsCipherSelection: true,
     supportsCurveSelection: false,
+    // helpers/tomcat.js:8-55 emits Tomcat's HttpHeaderSecurityFilter
+    // (org.apache.catalina.filters.HttpHeaderSecurityFilter) which was
+    // added in Tomcat 8.5.0 and emits Strict-Transport-Security from
+    // hstsEnabled / hstsMaxAgeSeconds / hstsIncludeSubDomains init
+    // params.
+    supportsHsts: '8.5.0',
+    // No OCSP-stapling element emitted by helpers/tomcat.js.
+    supportsOcspStapling: false,
+    // No PQ-aware code path; PQ key exchange depends on the JVM's TLS
+    // implementation but Tomcat does not emit a hybrid-group token.
+    supportsPq: false,
     tls13: '8.0.0',
     usesOpenssl: false,
   },
@@ -528,6 +774,14 @@ module.exports = {
     // with no equivalent per-suite / per-curve knob.
     supportsCipherSelection: '2.0.0',
     supportsCurveSelection: '2.0.0',
+    // helpers/traefik.js:62-73 emits Traefik's HSTS Headers middleware
+    // (stsSeconds + stsIncludeSubdomains); the Headers middleware shipped
+    // with the 2.0 rewrite.
+    supportsHsts: '2.0.0',
+    // Traefik does not expose a per-cert OCSP-stapling toggle; OCSP
+    // behavior is governed by Go's crypto/tls and the helper does not
+    // emit a stapling directive.
+    supportsOcspStapling: false,
     // Traefik 3.4.0 (Apr 2025) was the first stable release built with
     // Go >= 1.24 and therefore the first to negotiate X25519MLKEM768 via
     // its tls.curvePreferences directive.
