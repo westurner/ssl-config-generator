@@ -14,23 +14,27 @@
   "postCreateCommand": "npm ci",
   "customizations": {
     "vscode": {
+      // Only first-party / officially-published extensions
+      // (Microsoft, GitHub, Red Hat, EditorConfig, Prettier) are enabled by
+      // default. Third-party extensions are listed below but commented out;
+      // uncomment any you trust and want installed automatically.
       "extensions": [
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
         "EditorConfig.EditorConfig",
-        "DigitalBrainstem.javascript-ejs-support",
-        "syler.sass-indented",
         "redhat.vscode-yaml",
-        "tamasfe.even-better-toml",
-        "yzhang.markdown-all-in-one",
         "DavidAnson.vscode-markdownlint",
         "GitHub.vscode-pull-request-github",
         "GitHub.vscode-github-actions",
-        "eamodio.gitlens",
-        "streetsidesoftware.code-spell-checker",
-        "wmaurer.change-case",
-        "ms-azuretools.vscode-docker",
-        "Orta.vscode-jest"
+        "ms-azuretools.vscode-docker"
+        // ,"DigitalBrainstem.javascript-ejs-support"
+        // ,"syler.sass-indented"
+        // ,"tamasfe.even-better-toml"
+        // ,"yzhang.markdown-all-in-one"
+        // ,"eamodio.gitlens"
+        // ,"streetsidesoftware.code-spell-checker"
+        // ,"wmaurer.change-case"
+        // ,"Orta.vscode-jest"
       ],
       "settings": {
         "editor.tabSize": 2,
