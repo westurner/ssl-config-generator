@@ -3,9 +3,46 @@
 // cipher allow-list, the explicit-disable protocol policy, the PROVISIONAL PQ
 // warning, and the ProgramData-rooted backup directory.
 import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { spawnSync } from 'node:child_process';
+import { writeFileSync, readFileSync, existsSync, unlinkSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { runStandardHelperSuite } from './_helpers/harness.js';
 import { makeForm, makeOutput, PQ_MODES } from './_helpers/fixtures.js';
 import iis from '../src/js/helpers/iis.js';
+
+// Probe for `pwsh` once at module load. The end-to-end tests below are
+// silently skipped when PowerShell is not on PATH (CI runners without pwsh,
+// constrained sandboxes, etc.) — they do NOT replace the AST-level regex
+// assertions above, they supplement them with real-pwsh validation when
+// available.
+const PWSH = (() => {
+  try {
+    const r = spawnSync('pwsh', ['-NoProfile', '-Command', '$PSVersionTable.PSVersion.Major'], {
+      encoding: 'utf8', timeout: 10000,
+    });
+    return r.status === 0 ? 'pwsh' : null;
+  } catch { return null; }
+})();
+
+// Probe the platform once: `[System.Environment]::OSVersion.Platform` is
+// constant for the lifetime of the host, so we don't need to re-spawn pwsh
+// per test.
+const PWSH_IS_WINDOWS = (() => {
+  if (!PWSH) return false;
+  const r = spawnSync(PWSH, ['-NoProfile', '-Command', '[System.Environment]::OSVersion.Platform.ToString()'],
+    { encoding: 'utf8', timeout: 10000 });
+  return r.status === 0 && /Win32NT/i.test(r.stdout || '');
+})();
+
+// Escape a filesystem path for embedding inside a PowerShell single-quoted
+// literal: PowerShell single-quoted strings are literal except that an
+// embedded single quote is doubled (`''`). Backslashes are LITERAL inside
+// single-quoted strings — do NOT double them.
+function pwshSingleQuote(p) {
+  return p.replace(/'/g, "''");
+}
 
 runStandardHelperSuite({
   name: 'iis',
@@ -394,3 +431,129 @@ runStandardHelperSuite({
     });
   },
 });
+
+// ===========================================================================
+// End-to-end pwsh validation. Skipped (with reason) when `pwsh` is not on
+// PATH so this test file remains green on Windows-PowerShell-only or
+// pwsh-less hosts.
+// ===========================================================================
+
+const SKIP_REASON = 'pwsh not available on PATH';
+
+test('iis: rendered PowerShell parses cleanly with the pwsh AST parser', { skip: PWSH ? false : SKIP_REASON }, () => {
+  const out = iis(
+    makeForm({ serverVersion: '10.0.26100', config: 'intermediate', hsts: true, pq: 'mixed' }),
+    makeOutput('intermediate', { cipherFormat: 'iana', supportsPq: true,
+      tlsCurves: ['X25519MLKEM768', 'X25519', 'prime256v1', 'secp384r1'] }),
+  );
+  const dir = mkdtempSync(join(tmpdir(), 'iis-ps-'));
+  const ps1 = join(dir, 'Set-IISTls.ps1');
+  try {
+    writeFileSync(ps1, out, 'utf8');
+    // Use ParseFile to surface ALL parse errors at once (not just the first).
+    // Print both the message and start-line for diagnostics.
+    const script = `
+      $tokens = $null; $errors = $null
+      $null = [System.Management.Automation.Language.Parser]::ParseFile('${pwshSingleQuote(ps1)}', [ref]$tokens, [ref]$errors)
+      if ($errors -and $errors.Count -gt 0) {
+        $errors | ForEach-Object { Write-Output ("line {0}: {1}" -f $_.Extent.StartLineNumber, $_.Message) }
+        exit 1
+      }
+      Write-Output 'OK'
+      exit 0
+    `;
+    const r = spawnSync(PWSH, ['-NoProfile', '-Command', script], { encoding: 'utf8', timeout: 30000 });
+    assert.equal(r.status, 0,
+      `pwsh AST parse failed (exit ${r.status}):\nSTDOUT:\n${r.stdout}\nSTDERR:\n${r.stderr}`);
+    assert.match(r.stdout, /\bOK\b/, `expected "OK" on stdout; got: ${r.stdout}`);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('iis: -JsonToReg end-to-end converts a synthetic do.json into a valid Windows .reg v5 file', { skip: PWSH ? false : SKIP_REASON }, () => {
+  const out = iis(
+    makeForm({ serverVersion: '10.0.26100' }),
+    makeOutput('intermediate', { cipherFormat: 'iana' }),
+  );
+  const dir = mkdtempSync(join(tmpdir(), 'iis-reg-'));
+  const ps1     = join(dir, 'Set-IISTls.ps1');
+  const doJson  = join(dir, 'sample.do.json');
+  const regOut  = join(dir, 'sample.reg');
+  // Synthetic snapshot covering every renderer branch:
+  //   - DWord present (Enabled=0 / Enabled=4294967295)
+  //   - REG_SZ
+  //   - REG_MULTI_SZ
+  //   - delete-value (Existed:false)
+  //   - WebConfig entry (must become a `;`-comment, not a [Key] block)
+  const sample = [
+    { Kind:'Registry', Path:'HKLM\\SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\SCHANNEL\\Protocols\\TLS 1.0\\Server', Name:'Enabled', Type:'DWord', Value:0, Existed:true },
+    { Kind:'Registry', Path:'HKLM\\SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\SCHANNEL\\Protocols\\TLS 1.3\\Server', Name:'Enabled', Type:'DWord', Value:4294967295, Existed:true },
+    { Kind:'Registry', Path:'HKLM\\SOFTWARE\\Policies\\Microsoft\\Cryptography\\Configuration\\SSL\\00010002', Name:'Functions',  Type:'String',      Value:'TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384', Existed:true },
+    { Kind:'Registry', Path:'HKLM\\SOFTWARE\\Policies\\Microsoft\\Cryptography\\Configuration\\SSL\\00010002', Name:'EccCurves',  Type:'MultiString', Value:['curve25519','NistP256','NistP384'],            Existed:true },
+    { Kind:'Registry', Path:'HKLM\\SOFTWARE\\Policies\\Microsoft\\Cryptography\\Configuration\\SSL\\00010002', Name:'WasMissing', Type:null,          Value:null,                                            Existed:false },
+    { Kind:'WebConfig', PSPath:'MACHINE/WEBROOT/APPHOST', Filter:"system.applicationHost/sites/site[@name='Default Web Site']/hsts", Name:'enabled', Value:true, Existed:true },
+  ];
+  try {
+    writeFileSync(ps1, out, 'utf8');
+    writeFileSync(doJson, JSON.stringify(sample), 'utf8');
+    // Wrap in try/catch: Set-Acl throws on non-Windows pwsh ("ACL APIs are
+    // part of resource management on Windows and are not supported on this
+    // platform"). The .reg payload write happens AFTER the ACL tighten on
+    // Windows, but on Linux pwsh New-ProtectedFile will throw before
+    // ConvertFrom-DoUndoJsonToReg runs. So:
+    //   - On Windows: the .reg file IS written; assert content.
+    //   - On non-Windows pwsh: Set-Acl throws, .reg stays empty (0 bytes
+    //     from New-ProtectedFile's CreateNew); that's also a useful signal
+    //     (we proved the call sequence at least dispatches), but we can't
+    //     assert .reg content. Branch on the module-level PWSH_IS_WINDOWS.
+    const r = spawnSync(PWSH,
+      ['-NoProfile', '-Command', `try { & '${pwshSingleQuote(ps1)}' -JsonToReg '${pwshSingleQuote(doJson)}' -RegOut '${pwshSingleQuote(regOut)}' } catch { Write-Output ("CAUGHT: " + $_.Exception.Message) }`],
+      { encoding: 'utf8', timeout: 30000 },
+    );
+    if (!PWSH_IS_WINDOWS) {
+      // Expected: Set-Acl threw inside New-ProtectedFile.
+      assert.match(r.stdout + r.stderr, /Access Control List|not supported on this platform|CAUGHT/i,
+        `expected ACL-not-supported on non-Windows pwsh; got:\nSTDOUT:\n${r.stdout}\nSTDERR:\n${r.stderr}`);
+      // The empty file should have been pre-created by New-ProtectedFile
+      // (FileMode::CreateNew succeeds before Set-Acl is attempted).
+      assert.ok(existsSync(regOut), 'expected New-ProtectedFile to have pre-created the empty .reg file');
+      return;
+    }
+    // Windows path: .reg file must exist with the expected content.
+    assert.equal(r.status, 0,
+      `-JsonToReg dispatch failed (exit ${r.status}):\nSTDOUT:\n${r.stdout}\nSTDERR:\n${r.stderr}`);
+    assert.ok(existsSync(regOut), `${regOut} was not written`);
+    const buf = readFileSync(regOut);
+    // UTF-16LE BOM
+    assert.equal(buf[0], 0xFF, '.reg file must start with UTF-16LE BOM byte 0xFF');
+    assert.equal(buf[1], 0xFE, '.reg file must start with UTF-16LE BOM byte 0xFE');
+    // Decode and assert the renderer branches.
+    const text = buf.toString('utf16le').replace(/^\uFEFF/, '');
+    assert.match(text, /^Windows Registry Editor Version 5\.00/, 'missing v5 header');
+    // Single backslash separators (the regex must NOT match \\\\).
+    assert.match(text, /\[HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\SCHANNEL\\Protocols\\TLS 1\.0\\Server\]/);
+    assert.ok(!/HKEY_LOCAL_MACHINE\\\\/.test(text),
+      'key paths must use single backslashes (not the \\\\HKEY_LOCAL_MACHINE\\\\... double-escape bug)');
+    // DWord rendering (lowercase, 8-digit, two extremes)
+    assert.match(text, /"Enabled"=dword:00000000/);
+    assert.match(text, /"Enabled"=dword:ffffffff/);
+    // REG_SZ
+    assert.match(text, /"Functions"="TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384"/);
+    // REG_MULTI_SZ as hex(7) UTF-16LE byte stream — compute the expected
+    // prefix from the source string so the test isn't a magic-number wall.
+    // For "curve25519" (10 ASCII chars) this is 20 bytes of UTF-16LE plus
+    // 2 NUL terminator bytes, then the next string ("NistP256") begins.
+    const curve25519Hex = Array.from(Buffer.from('curve25519', 'utf16le'))
+      .map(b => b.toString(16).padStart(2, '0')).join(',');
+    assert.match(text, new RegExp('"EccCurves"=hex\\(7\\):' + curve25519Hex + ',00,00'));
+    // delete-value
+    assert.match(text, /"WasMissing"=-/);
+    // WebConfig becomes a `;`-comment, NOT a [Key] block.
+    assert.match(text, /;\s*--- WebConfig entries \(NOT representable in a \.reg file\)/);
+    assert.match(text, /;\s*Filter=system\.applicationHost\/sites\/site\[@name='Default Web Site'\]\/hsts/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
