@@ -264,3 +264,75 @@
   howpublished = {\url{https://bugzilla.mozilla.org/show_bug.cgi?id=1933731}},
   note         = {Tracking bug for ML-KEM (X25519MLKEM768) support in NSS / Firefox; reference for browser PQ support in Firefox.},
 }
+
+% --- IIS / Windows Schannel ------------------------------------------------
+% These citations back the IIS (PowerShell) target. Schannel is the
+% Windows-wide TLS SSP read by IIS, .NET, WinHTTP, RDP, SMB and any other
+% Windows component negotiating TLS, so the registry edits emitted by
+% src/js/helpers/iis.js apply system-wide --- which is precisely why the
+% generated script first backs up the affected keys to a .reg file and
+% supports a -Restore CLI option to roll back via `reg.exe import`.
+
+@misc{ms-manage-tls,
+  title        = {{Manage Transport Layer Security (TLS)}},
+  author       = {{Microsoft}},
+  year         = {2025},
+  howpublished = {\url{https://learn.microsoft.com/windows-server/security/tls/manage-tls}},
+  note         = {Authoritative reference for the HKLM\textbackslash SYSTEM\textbackslash CurrentControlSet\textbackslash Control\textbackslash SecurityProviders\textbackslash SCHANNEL\textbackslash Protocols\textbackslash <protocol>\textbackslash {Server,Client} layout (Enabled / DisabledByDefault DWORD values) used by the IIS helper to enable / disable per-version TLS in Schannel.},
+}
+
+@misc{ms-tls-registry,
+  title        = {{TLS registry settings}},
+  author       = {{Microsoft}},
+  year         = {2025},
+  howpublished = {\url{https://learn.microsoft.com/windows-server/security/tls/tls-registry-settings}},
+  note         = {Per-value reference for every Schannel registry knob: protocol versions, cipher-suite ordering, ECC curve order (EccCurves REG\_MULTI\_SZ), and the role of HKLM\textbackslash SOFTWARE\textbackslash Policies\textbackslash Microsoft\textbackslash Cryptography\textbackslash Configuration\textbackslash SSL\textbackslash 00010002 as the Group-Policy override of the system cipher-suite order.},
+}
+
+@misc{ms-cipher-suite-order,
+  title        = {{Prioritizing Schannel cipher suites}},
+  author       = {{Microsoft}},
+  year         = {2025},
+  howpublished = {\url{https://learn.microsoft.com/windows/win32/secauthn/prioritizing-schannel-cipher-suites}},
+  note         = {Specifies the comma-separated REG\_SZ "Functions" value under the SSL\textbackslash 00010002 key that the IIS helper writes to set the cipher-suite preference order. Names follow the Microsoft Schannel form, which corresponds 1:1 to the IANA TLS cipher-suite registry names except that DHE\_RSA suites are NOT implemented in Schannel and TLS 1.3 ciphers are managed separately --- callers should not expect TLS\_DHE\_RSA\_* tokens to be honoured.},
+}
+
+@misc{ms-tls-cipher-suites,
+  title        = {{TLS cipher suites in Windows}},
+  author       = {{Microsoft}},
+  year         = {2025},
+  howpublished = {\url{https://learn.microsoft.com/windows/win32/secauthn/tls-cipher-suites-in-windows-server-2022}},
+  note         = {Authoritative list of which IANA cipher suites Schannel actually implements per Windows release. Used to cross-check the Mozilla guideline list against Schannel reality (e.g. the absence of any TLS\_DHE\_RSA\_* implementation) before writing the Functions REG\_SZ value.},
+}
+
+@misc{ms-tls13-schannel,
+  title        = {{TLS 1.3 support in Schannel}},
+  author       = {{Microsoft}},
+  year         = {2024},
+  howpublished = {\url{https://learn.microsoft.com/windows/win32/secauthn/protocols-in-tls-ssl--schannel-ssp-}},
+  note         = {Establishes the Schannel TLS 1.3 floor (Windows Server 2022 / Windows 11), which is mirrored in configs.js as iis.tls13 = '10.0.20348'. TLS 1.3 cipher suites in Schannel are not user-configurable via the Functions REG\_SZ value --- they are negotiated from the fixed Schannel set when TLS 1.3 is enabled.},
+}
+
+@misc{ms-iis10-hsts,
+  title        = {{IIS 10.0 Version 1709 --- HSTS}},
+  author       = {{Microsoft}},
+  year         = {2017},
+  howpublished = {\url{https://learn.microsoft.com/iis/get-started/whats-new-in-iis-10-version-1709/iis-10-version-1709-hsts}},
+  note         = {Documents the native \textless hsts\textgreater configuration element under \textless site\textgreater (enabled / max-age / includeSubDomains / redirectHttpToHttps) introduced in IIS 10 v1709. Replaces the older approach of emitting Strict-Transport-Security as a custom HTTP response header. Used by the IIS helper's HSTS branch via Set-WebConfigurationProperty against system.applicationHost/sites/site[@name='\$siteName']/hsts.},
+}
+
+@misc{ms-pqc-windows-insider,
+  title        = {{Post-quantum cryptography comes to Windows Insiders and Linux}},
+  author       = {{Microsoft}},
+  year         = {2025},
+  howpublished = {\url{https://techcommunity.microsoft.com/blog/microsoft-security-blog/post-quantum-cryptography-comes-to-windows-insiders-and-linux/4413803}},
+  note         = {Microsoft's announcement that ML-KEM (NIST FIPS 203) and ML-DSA hybrid algorithms are exposed via SymCrypt and Schannel in Canary-channel Windows Insider builds (and on Linux via SymCrypt-OpenSSL). Justifies the IIS helper's PQ surface (X25519MLKEM768 hybrid named-group, mapped to the Schannel string MLKEM768X25519 in the EccCurves REG\_MULTI\_SZ value) and the configs.js iis.supportsPq:true opt-in flag.},
+}
+
+@misc{ms-symcrypt-mlkem,
+  title        = {{SymCrypt --- Microsoft's cryptographic primitive library}},
+  author       = {{Microsoft}},
+  year         = {2025},
+  howpublished = {\url{https://github.com/microsoft/SymCrypt}},
+  note         = {SymCrypt is the FIPS-validated cryptographic library backing Schannel, BCrypt and CNG on Windows. ML-KEM-512/768/1024 implementations were added in 2024-2025; this is the upstream that surfaces ML-KEM hybrids to Schannel for the IIS helper's PQ-only / hybrid modes.},
+}
