@@ -60,14 +60,47 @@ test('python: emits set_groups() with the colon-joined group list and a set_ecdh
 test('python: PQ-only mode emits the "classical curves are intentionally omitted" comment', () => {
   const out = python(
     baseForm({ pq: 'only' }),
-    Object.assign({}, BASE_OUTPUT, { tlsCurves: ['X25519MLKEM768'] }),
+    Object.assign({}, BASE_OUTPUT, { tlsCurves: ['X25519MLKEM768'], protocols: ['TLSv1.3'] }),
   );
   assert.match(out, /PQ-only mode: classical curves are intentionally omitted/);
   assert.match(out, /context\.set_groups\("X25519MLKEM768"\)/);
-  // No ML-KEM-only group in the list, so the fallback should not advertise
-  // a hybrid group to set_ecdh_curve(); it must fall back to a classical
-  // baseline curve (which is the documented behaviour).
-  assert.match(out, /context\.set_ecdh_curve\("prime256v1"\)/);
+  // PQ-only mode must NOT silently fall back to a classical single curve on
+  // Python < 3.13 — set_ecdh_curve() rejects ML-KEM names, so calling it
+  // with a classical curve here would defeat the user's PQ-only choice.
+  // The helper must raise loudly instead. (Match the function CALL, not
+  // any explanatory comment that names set_ecdh_curve.)
+  assert.doesNotMatch(out, /context\.set_ecdh_curve\(/);
+  assert.match(out, /raise RuntimeError\(/);
+  assert.match(out, /PQ-only mode requires Python >= 3\.13/);
+});
+
+test('python: PQ-only mode defensively pins minimum_version=TLSv1_3 even if protocols[0] is lower', () => {
+  // Even if state.js's protocol override were ever bypassed (or a caller
+  // constructed `output` directly), python.js must independently enforce
+  // the TLSv1.3 floor when pq=='only'. ML-KEM key_share is TLS 1.3-only.
+  const out = python(
+    baseForm({ pq: 'only' }),
+    Object.assign({}, BASE_OUTPUT, {
+      tlsCurves: ['X25519MLKEM768'],
+      protocols: ['TLSv1.2', 'TLSv1.3'],   // intentionally NOT just ['TLSv1.3']
+    }),
+  );
+  assert.match(out, /context\.minimum_version = ssl\.TLSVersion\.TLSv1_3/);
+});
+
+test('python: hybrid mode keeps the classical-curve fallback for Python < 3.13', () => {
+  // pq='hybrid' explicitly accepts a classical TLS 1.2 fallback, so the
+  // single-curve fallback for Python < 3.13 is documented behaviour
+  // (NOT a silent downgrade — the user already opted in to interop).
+  const out = python(baseForm({ pq: 'hybrid' }), BASE_OUTPUT);
+  assert.match(out, /context\.set_ecdh_curve\("X25519"\)/);
+  assert.doesNotMatch(out, /raise RuntimeError\(/);
+});
+
+test('python: notes that ML-KEM groups are TLS 1.3-only (key_share extension)', () => {
+  const out = python(baseForm({ pq: 'hybrid' }), BASE_OUTPUT);
+  assert.match(out, /TLS 1\.3-only/);
+  assert.match(out, /key_share/);
 });
 
 test('python: hybrid mode includes the downgrade-risk comment', () => {

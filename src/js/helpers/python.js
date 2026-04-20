@@ -37,7 +37,19 @@ export default (form, output) => {
     if (p === 'TLSv1' || p === 'TLSv1.0') return 'TLSv1';
     return 'TLSv1_2';
   };
-  const minProtocol = tlsVersionEnum(protocols[0] || 'TLSv1.2');
+  // ML-KEM hybrid key-exchange groups (X25519MLKEM768, SecP256r1MLKEM768,
+  // SecP384r1MLKEM1024) are defined exclusively for TLS 1.3 (key_share
+  // extension); they cannot be negotiated on a TLS 1.2 connection. So:
+  //   - pq=='only'   → defensively pin minimum_version=TLSv1_3 in python.js
+  //                    itself (don't rely on state.js's protocol override
+  //                    upstream — defense in depth).
+  //   - pq=='hybrid' → leave the floor at protocols[0]; on a TLS 1.2
+  //                    fallback the connection is classical-only, which is
+  //                    the documented hybrid trade-off.
+  //   - pq=='none'   → no PQ groups advertised regardless of protocol.
+  const minProtocol = form.pq === 'only'
+    ? 'TLSv1_3'
+    : tlsVersionEnum(protocols[0] || 'TLSv1.2');
   const maxProtocol = tlsVersionEnum(protocols[protocols.length - 1] || 'TLSv1.3');
   // Pick the first non-PQ curve as the single-curve fallback for
   // SSLContext.set_ecdh_curve() on Python < 3.13. ML-KEM hybrid groups
@@ -105,10 +117,15 @@ export default (form, output) => {
   if (groupsLine.length) {
     conf +=
       '\n'+
-      '# Key-exchange groups (a.k.a. "curves") in preference order.\n';
+      '# Key-exchange groups (a.k.a. "curves") in preference order.\n'+
+      '# ML-KEM hybrid groups (X25519MLKEM768, SecP256r1MLKEM768,\n'+
+      '# SecP384r1MLKEM1024) are TLS 1.3-only (key_share extension); a\n'+
+      '# TLS 1.2 connection silently advertises none of them.\n';
     if (form.pq === 'only') {
       conf +=
-      '# PQ-only mode: classical curves are intentionally omitted.\n';
+      '# PQ-only mode: classical curves are intentionally omitted, and\n'+
+      '# minimum_version is pinned to TLSv1_3 above to prevent a silent\n'+
+      '# TLS 1.2 fallback from negotiating classical-only key exchange.\n';
     }
     else if (form.pq === 'hybrid') {
       conf +=
@@ -123,11 +140,32 @@ export default (form, output) => {
       'try:\n'+
       '    # Python 3.13+: full multi-group preference list.\n'+
       '    context.set_groups("'+groupsLine+'")\n'+
-      'except AttributeError:\n'+
+      'except AttributeError:\n';
+    if (form.pq === 'only') {
+      // PQ-only mode on Python < 3.13 has NO safe single-curve fallback:
+      // set_ecdh_curve() rejects ML-KEM hybrid names, so silently calling
+      // it with a classical curve would defeat the user's PQ-only choice.
+      // Raise loudly instead.
+      conf +=
+      '    # Python < 3.13 cannot express a multi-group preference list,\n'+
+      '    # and set_ecdh_curve() rejects ML-KEM hybrid names. Silently\n'+
+      '    # falling back to a classical single curve here would defeat\n'+
+      '    # PQ-only mode, so raise loudly. Upgrade Python to 3.13+, or\n'+
+      '    # configure groups system-wide via openssl.cnf [system_default_sect]\n'+
+      '    # Groups (see the "OpenSSL config (openssl.cnf)" target).\n'+
+      '    raise RuntimeError(\n'+
+      '        "PQ-only mode requires Python >= 3.13 (SSLContext.set_groups); "\n'+
+      '        "set_ecdh_curve() cannot express ML-KEM hybrid groups. "\n'+
+      '        "Configure groups via openssl.cnf instead."\n'+
+      '    )\n';
+    }
+    else {
+      conf +=
       '    # Python < 3.13: only a single curve can be pinned via the API.\n'+
       '    # For a full PQ-aware group list on older interpreters, configure\n'+
       '    # the system openssl.cnf [system_default_sect] Groups directive.\n'+
       '    context.set_ecdh_curve("'+fallbackCurve+'")\n';
+    }
   }
 
   if (output.serverPreferredOrder) {
