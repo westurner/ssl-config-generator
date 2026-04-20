@@ -88,7 +88,7 @@ no logic is duplicated:
 | -------------------------- | ---------------------------------------------- | ------------------------------------------- | --------------- |
 | **Property invariants**    | regex / forbidden-primitive assertions         | `test/_helpers/harness.js` + `test/<helper>.test.js` | yes (`npm test`)        |
 | **Exact-output snapshots** | one config file per cell of the helpers × params grid | `fixtures/grid/<server>/<server>__…`        | yes (`npm test` reads them; `npm run render-grid` writes them) |
-| **Visual snapshots**       | PNGs of the rendered web page                  | `fixtures/screenshots/` (gitignored)        | no (opt-in via `SSL_GEN_SCREENSHOTS=1` + `npm run screenshots`) |
+| **Visual snapshots**       | PNGs of the rendered web page                  | `fixtures/screenshots/` (gitignored)        | no (opt-in via `SCG_GEN_SCREENSHOTS=1` + `npm run screenshots`) |
 
 Why all three:
 - **Invariants** catch *forbidden* output: "any future helper change anywhere must never reintroduce 3DES in `modern`."

@@ -10,7 +10,7 @@
     "start": "npm run watch",
     "test": "node --require @babel/register --test test/*.test.js",
     "render-grid": "node --require @babel/register scripts/render-grid.js",
-    "screenshots": "SSL_GEN_SCREENSHOTS=1 node scripts/screenshot.js"
+    "screenshots": "SCG_GEN_SCREENSHOTS=1 node scripts/screenshot.js"
   },
   "repository": {
     "type": "git",

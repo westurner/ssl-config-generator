@@ -9,7 +9,7 @@
 //   2. Exact-output snapshots (THIS FILE) — fixtures/grid/<server>/*
 //                             ("the helper's output for cell (X,Y,Z) is
 //                             exactly this byte sequence")
-//   3. Visual snapshots     — opt-in only via SSL_GEN_SCREENSHOTS=1 +
+//   3. Visual snapshots     — opt-in only via SCG_GEN_SCREENSHOTS=1 +
 //                             scripts/screenshot.js (PNGs of the rendered
 //                             web page; see AGENTS.md)
 //

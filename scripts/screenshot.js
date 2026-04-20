@@ -16,7 +16,7 @@
 //
 //   npm install --save-dev playwright
 //   npx playwright install chromium
-//   SSL_GEN_SCREENSHOTS=1 node scripts/screenshot.js \
+//   SCG_GEN_SCREENSHOTS=1 node scripts/screenshot.js \
 //       --server nginx --pq hybrid --config intermediate
 //
 // The renderer's date stamp is pinned to a fixed value when the page is
@@ -39,7 +39,7 @@ function tryRequire(name) {
   try { return require(name); } catch (_) { return null; }
 }
 
-const ENABLED = process.env.SSL_GEN_SCREENSHOTS === '1';
+const ENABLED = process.env.SCG_GEN_SCREENSHOTS === '1';
 
 // Probe-once / explain-clearly pattern. Mirrors test/iis.test.js (pwsh)
 // and test/python.test.js (python3): if the dependency is missing or the
@@ -47,7 +47,7 @@ const ENABLED = process.env.SSL_GEN_SCREENSHOTS === '1';
 function refuseIfDisabled() {
   if (!ENABLED) {
     process.stderr.write(
-      'screenshot.js: refusing to run without SSL_GEN_SCREENSHOTS=1\n' +
+      'screenshot.js: refusing to run without SCG_GEN_SCREENSHOTS=1\n' +
       '  (Playwright is heavy and image diffs are noisy — set the env\n' +
       '  var to opt in for local visual-regression review.)\n');
     process.exit(64);
@@ -87,7 +87,7 @@ function parseArgs(argv) {
       case '-h':
       case '--help':
         process.stdout.write(
-`Usage: SSL_GEN_SCREENSHOTS=1 node scripts/screenshot.js [options]
+`Usage: SCG_GEN_SCREENSHOTS=1 node scripts/screenshot.js [options]
 
   --server <name>     server software (default: nginx)
   --version <ver>     server version (default: configs.<server>.latestVersion)
