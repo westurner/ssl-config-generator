@@ -1,0 +1,44 @@
+{
+  "name": "ssl-config-generator",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-20-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "browser-sync",
+      "onAutoForward": "notify"
+    }
+  },
+  "postCreateCommand": "npm ci",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "EditorConfig.EditorConfig",
+        "DigitalBrainstem.javascript-ejs-support",
+        "syler.sass-indented",
+        "redhat.vscode-yaml",
+        "tamasfe.even-better-toml",
+        "yzhang.markdown-all-in-one",
+        "DavidAnson.vscode-markdownlint",
+        "GitHub.vscode-pull-request-github",
+        "GitHub.vscode-github-actions",
+        "eamodio.gitlens",
+        "streetsidesoftware.code-spell-checker",
+        "wmaurer.change-case",
+        "ms-azuretools.vscode-docker",
+        "Orta.vscode-jest"
+      ],
+      "settings": {
+        "editor.tabSize": 2,
+        "files.eol": "\n",
+        "files.insertFinalNewline": true,
+        "files.trimTrailingWhitespace": true
+      }
+    }
+  },
+  "remoteUser": "node"
+}
