@@ -7,7 +7,7 @@ import '../css/index.scss';
 import { validHashKeys } from './constants.js';
 import configs from './configs.js';
 import state from './state.js';
-import { sleep, xmlEntities } from './utils.js';
+import { sleep, xmlEntities, hashValueToBool } from './utils.js';
 
 
 // note if any button has changed so that we can update the fragment if it has
@@ -108,11 +108,6 @@ function form_config_init() {
       return;
     }
 
-    const mappings = {
-      'true': true,
-      'false': false,
-    };
-
     const params = new URLSearchParams(window.location.hash.substr(1));
 
     // some parameters have been renamed from the old SSL Configuration Generator
@@ -160,7 +155,10 @@ function form_config_init() {
         switch (e.type) {
           case 'radio':
           case 'checkbox':
-            e.checked = entry[1] === undefined ? true : mappings[entry[1]] === undefined ? !!entry[1] : mappings[entry[1]];
+            // Accept both short flag-only fragments (`?hsts&ocsp` →
+            // value === '') and explicit boolean fragments
+            // (`?hsts=true&ocsp=false`). See utils.hashValueToBool.
+            e.checked = hashValueToBool(entry[1]);
             break;
           case 'text':
           case 'hidden':
