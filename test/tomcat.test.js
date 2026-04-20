@@ -17,7 +17,7 @@
 // supportsCurveSelection:false — Tomcat's SSLHostConfig doesn't expose a
 // per-curve preference directive, so the harness skips the curves-presence
 // check.
-import runStandardHelperSuite from './_helpers/harness.js';
+import { runStandardHelperSuite } from './_helpers/harness.js';
 import tomcat from '../src/js/helpers/tomcat.js';
 
 runStandardHelperSuite({

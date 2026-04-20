@@ -2,7 +2,7 @@
 //
 // PostgreSQL 12+ uses ssl_min_protocol_version. PostgreSQL has no notion
 // of HSTS.
-import runStandardHelperSuite from './_helpers/harness.js';
+import { runStandardHelperSuite } from './_helpers/harness.js';
 import postgresql from '../src/js/helpers/postgresql.js';
 
 runStandardHelperSuite({

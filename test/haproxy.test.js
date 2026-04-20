@@ -3,7 +3,7 @@
 // HAProxy expresses protocol selection as a single ssl-min-ver directive
 // (since 2.2), not as a per-version list, so versionTokens here describes
 // "this version is the minimum" rather than "this version was emitted".
-import runStandardHelperSuite from './_helpers/harness.js';
+import { runStandardHelperSuite } from './_helpers/harness.js';
 import haproxy from '../src/js/helpers/haproxy.js';
 
 runStandardHelperSuite({

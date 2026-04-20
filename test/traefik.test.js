@@ -6,7 +6,7 @@
 // below uses 'iana' because that matches the rendered form Traefik emits
 // (bare IANA names, no `tls.` prefix); both 'go' and 'iana' produce the
 // same output.ciphers for state.js's purposes.
-import runStandardHelperSuite from './_helpers/harness.js';
+import { runStandardHelperSuite } from './_helpers/harness.js';
 import traefik from '../src/js/helpers/traefik.js';
 
 runStandardHelperSuite({

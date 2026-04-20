@@ -2,7 +2,7 @@
 //
 // stunnel 5.50+ uses sslVersionMin = TLSv1.x to set a minimum-version floor.
 // stunnel proxies arbitrary TCP traffic; no HSTS.
-import runStandardHelperSuite from './_helpers/harness.js';
+import { runStandardHelperSuite } from './_helpers/harness.js';
 import stunnel from '../src/js/helpers/stunnel.js';
 
 runStandardHelperSuite({

@@ -4,7 +4,7 @@
 // `no-sslv2`, `no-sslv3`, `no-tlsv1`, `no-tlsv1_1`, `no-tlsv1_2`.
 // Token PRESENCE means the version is EXCLUDED, so we drive the harness
 // in `negationVersionTokens` mode.
-import runStandardHelperSuite from './_helpers/harness.js';
+import { runStandardHelperSuite } from './_helpers/harness.js';
 import coturn from '../src/js/helpers/coturn.js';
 
 runStandardHelperSuite({

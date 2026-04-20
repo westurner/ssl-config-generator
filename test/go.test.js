@@ -5,7 +5,7 @@
 // helper renders IANA-style names with a `tls.` prefix. Go uses //
 // line-comments rather than #, so the harness's commentLine regex needs
 // overriding for the protocol-gating step.
-import runStandardHelperSuite from './_helpers/harness.js';
+import { runStandardHelperSuite } from './_helpers/harness.js';
 import go from '../src/js/helpers/go.js';
 
 runStandardHelperSuite({

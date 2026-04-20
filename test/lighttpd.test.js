@@ -7,7 +7,7 @@
 // "# lighttpd <serverVersion> TLS default" annotation that lighttpd.js
 // appends so the operator knows the commented line is intentional. lighttpd
 // is a webserver; HSTS is supported.
-import runStandardHelperSuite from './_helpers/harness.js';
+import { runStandardHelperSuite } from './_helpers/harness.js';
 import lighttpd from '../src/js/helpers/lighttpd.js';
 
 const SERVER_VERSION = '1.4.82';

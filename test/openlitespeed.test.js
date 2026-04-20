@@ -4,7 +4,7 @@
 // enabled protocols (16 = TLS1.3, 24 = TLS1.2+1.3, 30 = TLS1.0+).
 // Cipher names and HSTS are emitted normally; OpenLiteSpeed's HSTS uses
 // the same `Header Set Strict-Transport-Security` extraHeaders syntax.
-import runStandardHelperSuite from './_helpers/harness.js';
+import { runStandardHelperSuite } from './_helpers/harness.js';
 import openlitespeed from '../src/js/helpers/openlitespeed.js';
 
 runStandardHelperSuite({

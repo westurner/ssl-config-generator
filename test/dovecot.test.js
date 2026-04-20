@@ -3,7 +3,7 @@
 // Dovecot 2.3+ uses ssl_min_protocol = TLSv1.x to set a minimum-version
 // floor (older releases listed each protocol explicitly). Dovecot is an
 // IMAP/POP3 server with no notion of HSTS.
-import runStandardHelperSuite from './_helpers/harness.js';
+import { runStandardHelperSuite } from './_helpers/harness.js';
 import dovecot from '../src/js/helpers/dovecot.js';
 
 runStandardHelperSuite({

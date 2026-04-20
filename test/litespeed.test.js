@@ -5,7 +5,7 @@
 // Because no TLS-version strings are emitted, we opt out of strict
 // per-version gating (versionTokens) and rely on protocolDirective's
 // per-profile mask numbers. Cipher names and HSTS are emitted normally.
-import runStandardHelperSuite from './_helpers/harness.js';
+import { runStandardHelperSuite } from './_helpers/harness.js';
 import litespeed from '../src/js/helpers/litespeed.js';
 
 runStandardHelperSuite({

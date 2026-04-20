@@ -286,7 +286,7 @@ function _consumeOptOut(category, optOuts, out) {
 //     // `${name}: `.
 //     extraTests:       (t) => { t('does X', () => { ... }); },
 //   });
-export default function runStandardHelperSuite(opts) {
+export function runStandardHelperSuite(opts) {
   const {
     name,
     helper,

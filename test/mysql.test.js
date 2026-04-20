@@ -2,7 +2,7 @@
 //
 // MySQL lists every enabled version explicitly: tls_version = TLSv1.2,TLSv1.3
 // — so per-version gating applies cleanly. No HSTS.
-import runStandardHelperSuite from './_helpers/harness.js';
+import { runStandardHelperSuite } from './_helpers/harness.js';
 import mysql from '../src/js/helpers/mysql.js';
 
 runStandardHelperSuite({
