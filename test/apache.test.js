@@ -1,5 +1,5 @@
 // apache (mod_ssl) helper — generic-suite tests via the shared harness.
-import { runStandardHelperSuite } from './_helpers/harness.js';
+import { runStandardHelperSuite, BARE_TLSV1 } from './_helpers/harness.js';
 import apache from '../src/js/helpers/apache.js';
 
 runStandardHelperSuite({
@@ -17,7 +17,7 @@ runStandardHelperSuite({
     'TLSv1.3': /\+TLSv1\.3\b/,
     'TLSv1.2': /\+TLSv1\.2\b/,
     'TLSv1.1': /\+TLSv1\.1\b/,
-    'TLSv1':   /\+TLSv1(?![.\d])/,
+    'TLSv1':   new RegExp('\\+' + BARE_TLSV1.source),
   },
   hstsHeader: /Header[^\n]*set Strict-Transport-Security "max-age=63072000; includeSubDomains"/,
 });

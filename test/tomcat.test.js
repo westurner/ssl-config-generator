@@ -5,10 +5,13 @@
 // is the configs.js default 'openssl'.
 //
 // HSTS handling: when form.hsts is true the helper emits an HTTP→HTTPS
-// redirect Connector AND an XML-comment block containing a ready-to-paste
-// `org.apache.catalina.filters.HttpHeaderSecurityFilter` <filter> snippet
-// for WEB-INF/web.xml (Tomcat 8.5+). The harness's `Strict-Transport-Security
-// […] includeSubDomains` assertion is satisfied by the rendered "Equivalent
+// redirect Connector AND an actual <filter>/<filter-mapping> XML block
+// referencing `org.apache.catalina.filters.HttpHeaderSecurityFilter`
+// (Tomcat 8.5+). The version requirement is documented in a leading
+// XML comment, but the filter elements themselves are emitted as live
+// configuration so an operator can paste them straight into
+// WEB-INF/web.xml. The harness's `Strict-Transport-Security […]
+// includeSubDomains` assertion is satisfied by the rendered "Equivalent
 // rendered response header:" example inside the comment block.
 //
 // supportsCurveSelection:false — Tomcat's SSLHostConfig doesn't expose a
@@ -36,9 +39,12 @@ runStandardHelperSuite({
     'TLSv1.1': /\bTLSv1\.1\b/,
     'TLSv1':   BARE_TLSV1,
   },
-  // The HSTS contract for the web.xml HttpHeaderSecurityFilter is encoded as
-  // an "Equivalent rendered response header:" line inside the XML comment
-  // block — assert on that line so the test mirrors what an operator sees
-  // and what their HTTP responses will actually contain.
-  hstsHeader: /Strict-Transport-Security:\s*max-age=63072000;\s*includeSubDomains/,
+  // The HSTS contract is encoded BOTH as an "Equivalent rendered response
+  // header:" line in the leading comment AND as live <init-param> elements
+  // (hstsEnabled / hstsMaxAgeSeconds / hstsIncludeSubDomains). The regex
+  // here pins both: the rendered header form (which the harness's
+  // case-insensitive includeSubDomains check consumes) AND the
+  // <filter-class>HttpHeaderSecurityFilter, so a future regression that
+  // accidentally re-comments the XML block will trip this test.
+  hstsHeader: /Strict-Transport-Security:\s*max-age=63072000;\s*includeSubDomains[\s\S]*<filter-class>org\.apache\.catalina\.filters\.HttpHeaderSecurityFilter<\/filter-class>/,
 });

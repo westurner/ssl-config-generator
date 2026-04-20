@@ -5,7 +5,7 @@
 // `- Name: ECDHE-… / Value: true`. configs.js does not set cipherFormat
 // → defaults to 'openssl', and ELB's supportedCiphers list IS in OpenSSL
 // form. ELB has no HSTS support (configs.js: supportsHsts:false).
-import { runStandardHelperSuite } from './_helpers/harness.js';
+import { runStandardHelperSuite, BARE_TLSV1 } from './_helpers/harness.js';
 import awselb from '../src/js/helpers/awselb.js';
 
 runStandardHelperSuite({
@@ -24,6 +24,6 @@ runStandardHelperSuite({
     'TLSv1.3': /Protocol-TLSv1\.3\b/,
     'TLSv1.2': /Protocol-TLSv1\.2\b/,
     'TLSv1.1': /Protocol-TLSv1\.1\b/,
-    'TLSv1':   /Protocol-TLSv1(?![.\d])/,
+    'TLSv1':   new RegExp('Protocol-' + BARE_TLSV1.source),
   },
 });

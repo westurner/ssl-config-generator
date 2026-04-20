@@ -9,9 +9,25 @@
 //                                      Jetty, Redis, Squid, AWS ELB/ALB, s2n-tls,
 //                                      rustls, the LiteSpeed family, Coturn,
 //                                      OracleHTTP).
-//   These two attributes drive the test harness's "ciphers/curves are present"
-//   assertions; setting them false is also the documented contract that the
-//   generator UI can use to grey-out PQ-group / cipher selection knobs.
+//
+//   Why this matters (security): being able to specify ciphers / curves
+//   explicitly in a server config is itself a security-hardening feature.
+//   When a previously-trusted primitive is found broken or weakened
+//   (Sweet32 against 3DES, the SLOTH attack against MD5/SHA-1 in TLS 1.2,
+//   the 2024 announcements around classical ECDH parameters), an operator
+//   running a server that exposes per-cipher / per-curve knobs can
+//   mitigate IMMEDIATELY by editing one config file and reloading — they
+//   don't have to wait for an upstream patch, a vendor advisory, or a new
+//   binary release. Conversely, helpers marked supportsCipherSelection:false
+//   or supportsCurveSelection:false (AWS ALB managed policies, s2n-tls
+//   security policies, MySQL, Redis, Tomcat, …) bind the operator to the
+//   vendor's update cadence: the only way to drop a freshly-broken
+//   primitive is to wait for the vendor to ship a new managed-policy
+//   identifier or a new server build. The capability flags here document
+//   that limitation explicitly so the UI can surface it and so operators
+//   making procurement decisions can weigh "fast mitigation latency" as
+//   one of the criteria.
+//
 // cipherFormat is assumed to be 'openssl' unless defined otherwise
 
 

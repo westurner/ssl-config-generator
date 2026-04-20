@@ -540,8 +540,14 @@ export function runStandardHelperSuite(opts) {
     assert.match(withOn, expected,
       `expected STS header matching ${expected} when form.hsts=true`);
     if (!_consumeOptOut('hstsIncludeSubDomains', optOuts, withOn)) {
-      assert.match(withOn, /includeSubDomains/,
-        'STS header is missing the includeSubDomains directive (RFC 6797 §6.1.2). ' +
+      // Case-insensitive match: some helpers use the literal HTTP header
+      // spelling `includeSubDomains` (capital D), others use config-key
+      // conventions like Traefik's `stsIncludeSubdomains` (lowercase d).
+      // Both encode the same directive — what matters is the rendered
+      // HTTP response, and the helper-specific `hstsHeader` regex
+      // already pins the exact emitted form.
+      assert.match(withOn, /includesubdomains/i,
+        'STS configuration is missing the includeSubDomains directive (RFC 6797 §6.1.2). ' +
         'If this helper genuinely cannot emit it, declare ' +
         'optOuts.hstsIncludeSubDomains:{ warning: /…/ }.');
     }
