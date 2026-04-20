@@ -1,40 +1,60 @@
 // configs for the supported pieces of software
-// hasVersions, showSupports, supportsHsts, and usesOpenssl only need to be defined if false
-// supportsPq is assumed FALSE unless explicitly set (opposite default of
-// the *Selection flags below): a helper opts IN by declaring it has a PQ-aware
-// render branch today (X25519MLKEM768 / SecP256r1MLKEM768 / SecP384r1MLKEM1024
-// codepoints, or a managed-policy alias like s2n-tls 'default_pq' that
-// negotiates ML-KEM hybrids automatically). Helpers that have NO PQ surface
-// whatsoever (no group token, no comment, no policy alias) leave the flag
-// unset. The capability matrix surfaced by this flag answers the operator
-// question "is this server even ABLE to negotiate post-quantum key exchange
-// today?" — orthogonal to the per-curve / per-cipher mitigation-latency
-// flags below.
+//
+// Capability-flag conventions
+// ---------------------------
+// Each `supports*` / `usesOpenssl` / `showSupports` / `hasVersions`
+// flag accepts FOUR shapes — and the rendered helpers capability table
+// in src/templates/index.ejs (the one served at the bottom of the
+// site) surfaces all four states explicitly:
+//
+//   - '<ver>'   → the first upstream release that surfaced the feature.
+//                 The string is documentation-only; runtime gating in
+//                 src/js/render.js coerces these flags to a boolean via
+//                 `!== false`, and `eolBefore` decides which historical
+//                 versions are even selectable in the UI. The table
+//                 displays the version string verbatim.
+//   - true      → "supported, version unknown / not yet recorded".
+//   - false     → not supported by this helper at all (table: "no").
+//   - (omitted) → UNSPECIFIED. The renderer treats omitted as enabled
+//                 for the booleans (HSTS, cipher/curve selection,
+//                 usesOpenssl, showSupports, hasVersions) so existing
+//                 behaviour is preserved. The capability table renders
+//                 a literal `—` so contributors can see at a glance
+//                 which helper × capability cells haven't been audited
+//                 and need a yes/no/version-string declaration. Prefer
+//                 explicit values over omissions in new entries.
+//
+// hasVersions, showSupports, supportsHsts, and usesOpenssl historically
+// only needed to be defined if false — that runtime default is preserved
+// (omitted == enabled) but new entries SHOULD declare the flag
+// explicitly so the table doesn't render `—`.
+//
+// supportsPq is assumed FALSE at runtime unless explicitly set: a helper
+// opts IN by declaring it has a PQ-aware render branch today
+// (X25519MLKEM768 / SecP256r1MLKEM768 / SecP384r1MLKEM1024 codepoints,
+// or a managed-policy alias like s2n-tls 'default_pq' that negotiates
+// ML-KEM hybrids automatically). Helpers that have NO PQ surface
+// whatsoever (no group token, no comment, no policy alias) leave the
+// flag unset. The capability matrix surfaced by this flag answers the
+// operator question "is this server even ABLE to negotiate post-quantum
+// key exchange today?" — orthogonal to the per-curve / per-cipher
+// mitigation-latency flags below.
 //   - supportsPq:'<ver>' → helper has a PQ-aware codepath in src/js/helpers/;
 //                          the value is the first upstream release that
 //                          surfaced PQ key exchange (mirrors how `tls13` and
 //                          version-string `supportsOcspStapling` are
-//                          encoded). State.js coerces this to a boolean on
-//                          output.supportsPq so the UI / harness can branch
-//                          on it the same way they branch on
-//                          supportsCurveSelection.
+//                          encoded). Render.js exposes this verbatim on
+//                          output.supportsPq.
 //   - supportsPq:true    → also accepted (treated as "supports PQ, version
 //                          unknown / not yet recorded").
-//   - (omitted)          → no PQ surface; the helper ignores form.pq.
+//   - (omitted)          → no PQ surface; the helper ignores form.pq and
+//                          the table renders `—`.
 //
-// supportsCipherSelection, supportsCurveSelection, and supportsHsts are
-// assumed `true` unless defined otherwise. Each accepts the same value
+// supportsCipherSelection, supportsCurveSelection, and supportsHsts
+// historically defaulted to "yes" when omitted. That runtime default is
+// preserved (state.js / render.js still gate via `!== false`) but new
+// entries SHOULD set them explicitly. Each accepts the same value
 // shapes as `supportsPq` / `supportsOcspStapling`:
-//   - '<ver>'  → the first upstream release that surfaced the feature (the
-//                value is documentation-only — state.js coerces these three
-//                flags to a boolean via `!== false` so the version string
-//                does NOT cause runtime gating; `eolBefore` is the floor
-//                that decides which historical versions are even
-//                selectable in the UI). Mirrors how `supportsPq` and
-//                version-string `supportsOcspStapling` are encoded.
-//   - true     → "supported, version unknown / not yet recorded".
-//   - (omit)   → same as true.
-//   - false    → not supported by this helper at all.
 //   - supportsCipherSelection:false  → the helper cannot emit a per-cipher list
 //                                      (e.g. AWS ALB / s2n-tls expose only named
 //                                      "policy" identifiers).

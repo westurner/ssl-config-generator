@@ -69,7 +69,10 @@ const render = async () => {
 
   // render the output header
   let header = `<h3>${_state.form.version_tags}</h3>\n`;
-  if (_state.output.showSupports) {
+  // showSupports defaults to "yes" when configs.js omits the flag, so
+  // treat null (omitted) and true the same. See render.js: omitted →
+  // output.showSupports is null; an explicit `false` opts out.
+  if (_state.output.showSupports !== false) {
     header += '<h6 id="output-clients">\n  Supports '+_state.output.oldestClients.join(', ')+'</h6>\n';
   }
   document.getElementById('output-header').innerHTML = header;
