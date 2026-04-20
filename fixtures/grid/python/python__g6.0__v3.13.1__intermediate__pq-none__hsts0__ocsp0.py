@@ -1,5 +1,5 @@
 # generated 1970-01-01, Mozilla Guideline v6.0, Python (ssl module) 3.13.1, OpenSSL 3.6.1, intermediate config, PQ: none
-# https://ssl-config.mozilla.org/#server=python&version=3.13.1&config=intermediate&openssl=3.6.1&guideline=6.0&pq=none
+# https://ssl-config.mozilla.org/#server=python&version=3.13.1&config=intermediate&openssl=3.6.1&guideline=6.0&hsts=false&ocsp=false&pq=none
 #
 # Python `ssl` module configuration (intermediate profile).
 #

@@ -1,5 +1,5 @@
 # generated 1970-01-01, Mozilla Guideline v5.7, IIS (PowerShell) 10.0.26100, intermediate config, PQ: hybrid, HSTS
-# https://ssl-config.mozilla.org/#server=iis&version=10.0.26100&config=intermediate&hsts&guideline=5.7
+# https://ssl-config.mozilla.org/#server=iis&version=10.0.26100&config=intermediate&guideline=5.7&hsts=true&ocsp=false&pq=hybrid
 #
 # Save this file as Set-IISTls.ps1 and run it from an ELEVATED PowerShell
 # prompt (Run as Administrator). The script edits Schannel registry keys

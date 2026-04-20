@@ -58,15 +58,33 @@ export default function pureState({
   }
   const isPqGroup = (g) => /MLKEM/i.test(g);
 
-  // generate the fragment (matches state.js: omit pq= when 'hybrid')
+  // Generate the URL fragment that prefixes every generated config and
+  // doubles as the address-bar state.  Each axis is emitted as an
+  // explicit `key=value` urlparam pair (no flag-only `&hsts` shorthand)
+  // so that the URL printed at the top of every helper output is a
+  // fully self-describing capture of the form state, copy-pasteable
+  // back into the live site:
+  //
+  //   server=nginx&version=1.27.3&config=intermediate&openssl=3.6.1
+  //     &guideline=5.7&hsts=true&ocsp=false&pq=hybrid
+  //
+  // index.js (URLSearchParams) reads both the legacy flag form and the
+  // explicit `key=value` form, so this is round-trip safe.
+  // openssl=…  is omitted only for helpers with usesOpenssl:false (the
+  // OpenSSL version is meaningless there). hsts / ocsp / pq are
+  // ALWAYS present so a reader can tell at a glance which mode the
+  // file was generated in (the previous shorthand silently elided the
+  // negative cases).
+  const hstsOn = configs[server].supportsHsts !== false && !!hsts;
+  const ocspOn = !!supportsOcspStapling && !!ocsp;
   let fragment = `server=${server}&version=${serverVersion}&config=${config}`;
-  fragment += configs[server].usesOpenssl !== false ? `&openssl=${opensslVersion}` : '';
-  fragment += configs[server].supportsHsts !== false && hsts ? '&hsts' : '';
-  fragment += supportsOcspStapling && ocsp ? '&ocsp' : '';
-  fragment += `&guideline=${guideline}`;
-  if (pqEffective !== 'hybrid') {
-    fragment += `&pq=${pqEffective}`;
+  if (configs[server].usesOpenssl !== false) {
+    fragment += `&openssl=${opensslVersion}`;
   }
+  fragment += `&guideline=${guideline}`;
+  fragment += `&hsts=${hstsOn ? 'true' : 'false'}`;
+  fragment += `&ocsp=${ocspOn ? 'true' : 'false'}`;
+  fragment += `&pq=${pqEffective}`;
 
   // generate the version tags
   let version_tags = `${configs[server].name} ${serverVersion}`;

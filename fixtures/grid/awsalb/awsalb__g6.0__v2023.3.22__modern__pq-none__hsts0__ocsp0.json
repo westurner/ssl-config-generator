@@ -3,7 +3,7 @@
 # profile onto an existing Amazon SSL Security Policy. For additional information, please see:
 # https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html#describe-ssl-policies
 AWSTemplateFormatVersion: 2010-09-09
-Description: Mozilla ALB configuration generated 1970-01-01, https://ssl-config.mozilla.org/#server=awsalb&version=2023.3.22&config=modern&guideline=6.0&pq=none
+Description: Mozilla ALB configuration generated 1970-01-01, https://ssl-config.mozilla.org/#server=awsalb&version=2023.3.22&config=modern&guideline=6.0&hsts=false&ocsp=false&pq=none
 Parameters:
   SSLCertificateId:
     Description: The ARN of the ACM SSL certificate to use

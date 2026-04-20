@@ -1,6 +1,6 @@
 <!--
 generated 1970-01-01, Mozilla Guideline v5.7, Tomcat 11.0.1, intermediate config, PQ: none, HSTS
-https://ssl-config.mozilla.org/#server=tomcat&version=11.0.1&config=intermediate&hsts&guideline=5.7&pq=none
+https://ssl-config.mozilla.org/#server=tomcat&version=11.0.1&config=intermediate&guideline=5.7&hsts=true&ocsp=false&pq=none
 -->
 <Connector
     port="80"

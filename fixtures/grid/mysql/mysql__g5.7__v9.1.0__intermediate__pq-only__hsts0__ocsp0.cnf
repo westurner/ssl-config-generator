@@ -1,5 +1,5 @@
 # generated 1970-01-01, Mozilla Guideline v5.7, MySQL 9.1.0, OpenSSL 3.6.1, intermediate config, PQ: only
-# https://ssl-config.mozilla.org/#server=mysql&version=9.1.0&config=intermediate&openssl=3.6.1&guideline=5.7&pq=only
+# https://ssl-config.mozilla.org/#server=mysql&version=9.1.0&config=intermediate&openssl=3.6.1&guideline=5.7&hsts=false&ocsp=false&pq=only
 [mysqld]
 require_secure_transport = on
 ssl-cert = /path/to/signed_cert_plus_intermediates
