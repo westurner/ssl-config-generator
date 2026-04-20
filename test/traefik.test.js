@@ -1,8 +1,11 @@
 // traefik helper — generic-suite tests via the shared harness.
 //
 // Traefik 2.x uses TOML keys minVersion = "VersionTLS12" / "VersionTLS13".
-// Like Caddy, the configs.js cipherFormat is 'go', which means state.js
-// hands Traefik the IANA cipher list.
+// configs.js declares cipherFormat:'go' for Traefik, which state.js (state.js:140)
+// translates to the IANA cipher list in output.ciphers. The harness option
+// below uses 'iana' because that matches the rendered form Traefik emits
+// (bare IANA names, no `tls.` prefix); both 'go' and 'iana' produce the
+// same output.ciphers for state.js's purposes.
 import { runStandardHelperSuite } from './_helpers/harness.js';
 import traefik from '../src/js/helpers/traefik.js';
 
