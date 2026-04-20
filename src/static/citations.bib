@@ -201,6 +201,22 @@
   note         = {Reference for GnuTLS priority strings; the syntax used by gnutls_priority_init() and the system /etc/gnutls/config file. GnuTLS 3.8.10 added GROUP-X25519-MLKEM768.},
 }
 
+@misc{s2n-tls,
+  title        = {{s2n-tls --- a C99 implementation of the TLS/SSL protocols}},
+  author       = {{Amazon Web Services}},
+  year         = {2025},
+  howpublished = {\url{https://github.com/aws/s2n-tls}},
+  note         = {C TLS library from AWS. Configured via named security policies passed to s2n_config_set_cipher_preferences(); cipher / curve / signature lists are bundled into each policy rather than being user-tunable.},
+}
+
+@misc{s2n-tls-security-policies,
+  title        = {{s2n-tls --- Security Policies}},
+  author       = {{Amazon Web Services}},
+  year         = {2025},
+  howpublished = {\url{https://github.com/aws/s2n-tls/blob/main/docs/usage-guide/topics/ch06-security-policies.md}},
+  note         = {Reference for s2n-tls named security policies (default, default_tls13, default_pq, dated 2017xxxx / 2019xxxx / 2024xxxx policies, etc.). default_pq enables the X25519MLKEM768 hybrid PQ key-exchange group.},
+}
+
 @misc{ietf-merkle-tree-certs,
   title        = {{Merkle Tree Certificates for TLS}},
   author       = {Davidben, David and Westerbaan, Bas},
