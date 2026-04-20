@@ -185,13 +185,14 @@
       <p class="text-muted small">
         Per-helper attributes from
         <a href="https://github.com/mozilla/ssl-config-generator/blob/master/src/js/configs.js"><code>src/js/configs.js</code></a>.
-        Defaults (when an attribute is omitted) follow the file's header
-        comment: <em>uses OpenSSL</em>, <em>HSTS</em>, <em>cipher selection</em>
-        and <em>curve selection</em> default to <strong>yes</strong>;
-        <em>OCSP stapling</em> and <em>PQ</em> default to <strong>no</strong>;
-        <em>cipher format</em> defaults to <code>openssl</code>. A version
-        string in the <em>OCSP stapling</em> column denotes the first release
-        with stapling support.
+        A <code>—</code> in any of the capability columns means the
+        helper entry omitted that flag (it is <em>unspecified</em>); the
+        runtime treats omitted as enabled for the booleans, but the
+        table surfaces the gap explicitly so contributors can spot
+        helpers that haven't been audited yet. <em>Cipher format</em>
+        defaults to <code>openssl</code>. A version string in any of
+        the capability columns denotes the first upstream release with
+        that feature.
       </p>
       <div class="table-responsive">
         <table class="table table-sm table-striped table-bordered table-hover" aria-labelledby="helpers-table-heading">
@@ -211,12 +212,15 @@
           </thead>
           <tbody>
             <%
-              const yesNo = (v, def) => {
-                const value = (v === undefined) ? def : v;
-                return value ? 'yes' : 'no';
-              };
-              const versionOr = (v, def) => {
-                if (v === undefined) return yesNo(undefined, def);
+              // Capability flags surface three states in the table:
+              //   - true / version string  → "yes" or the version
+              //   - false                  → "no"
+              //   - undefined / null       → "—" (helper hasn't declared
+              //                              the flag; runtime treats
+              //                              omitted as enabled but the
+              //                              table flags it for follow-up)
+              const cap = (v) => {
+                if (v === undefined || v === null) return '—';
                 if (typeof v === 'string') return v;
                 return v ? 'yes' : 'no';
               };
@@ -229,13 +233,13 @@
               <th scope="row"><%= c.name %></th>
               <td><%= c.latestVersion || '—' %></td>
               <td><%= c.tls13 || '—' %></td>
-              <td><%= yesNo(c.usesOpenssl, true) %></td>
+              <td><%= cap(c.usesOpenssl) %></td>
               <td><code><%= c.cipherFormat || 'openssl' %></code></td>
-              <td><%= versionOr(c.supportsCipherSelection, true) %></td>
-              <td><%= versionOr(c.supportsCurveSelection, true) %></td>
-              <td><%= versionOr(c.supportsHsts, true) %></td>
-              <td><%= versionOr(c.supportsOcspStapling, false) %></td>
-              <td><%= versionOr(c.supportsPq, false) %></td>
+              <td><%= cap(c.supportsCipherSelection) %></td>
+              <td><%= cap(c.supportsCurveSelection) %></td>
+              <td><%= cap(c.supportsHsts) %></td>
+              <td><%= cap(c.supportsOcspStapling) %></td>
+              <td><%= cap(c.supportsPq) %></td>
             </tr>
             <% }) %>
           </tbody>

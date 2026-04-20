@@ -164,7 +164,16 @@ export default function pureState({
       dhCommand: `curl ${origin}/ffdhe${ssc.dh_param_size}.txt`,
       dhParamSize: ssc.dh_param_size,
       fragment,
-      hasVersions: configs[server].hasVersions !== false,
+      // Capability-flag exposure rule: pass through whatever the
+      // configs.js entry declared, and surface `null` when it omitted
+      // the key entirely. Downstream consumers (index.js, helpers,
+      // the capability table) MUST treat `null` as "unspecified" — the
+      // table renders '—', runtime gating in this file keeps using
+      // `!== false` so an omitted flag still behaves as enabled. This
+      // makes the difference between "the helper author affirmatively
+      // declared yes/no" and "no statement on file" visible to
+      // operators.
+      hasVersions:             configs[server].hasVersions             ?? null,
       header,
       hstsMaxAge: ssc.hsts_min_age,
       hstsRedirectCode: 308,
@@ -175,15 +184,15 @@ export default function pureState({
       protocols,
       pqMode: pqEffective,
       serverPreferredOrder: ssc.server_preferred_order,
-      showSupports: configs[server].showSupports !== false,
-      supportsHsts: configs[server].supportsHsts !== false,
+      showSupports:            configs[server].showSupports            ?? null,
+      supportsHsts:            configs[server].supportsHsts            ?? null,
       supportsOcspStapling: !!supportsOcspStapling,
-      supportsCipherSelection: configs[server].supportsCipherSelection !== false,
-      supportsCurveSelection: configs[server].supportsCurveSelection !== false,
-      supportsPq: !!configs[server].supportsPq,
+      supportsCipherSelection: configs[server].supportsCipherSelection ?? null,
+      supportsCurveSelection:  configs[server].supportsCurveSelection  ?? null,
+      supportsPq:              configs[server].supportsPq              ?? null,
       tlsCurves,
       usesDhe: ciphers.join(':').includes(':DHE') || ciphers.join(':').includes('_DHE_'),
-      usesOpenssl: configs[server].usesOpenssl !== false,
+      usesOpenssl:             configs[server].usesOpenssl             ?? null,
     },
   };
 }
