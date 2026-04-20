@@ -543,6 +543,23 @@ export function runStandardHelperSuite(opts) {
         'If this helper genuinely cannot emit it, declare ' +
         'optOuts.hstsIncludeSubDomains:{ warning: /…/ }.');
     }
+
+    // hstsMaxAge round-trip: re-render with a sentinel max-age value and
+    // assert it (a) appears in the rendered output and (b) replaces the
+    // default 63072000. Catches helpers that hard-code max-age instead of
+    // splicing in output.hstsMaxAge from state.js.
+    const SENTINEL_MAX_AGE = 12345678;
+    const withSentinel = helper(
+      baseForm({ hsts: true }),
+      baseOutput('intermediate', { hstsMaxAge: SENTINEL_MAX_AGE }),
+    );
+    if (!_consumeOptOut('hstsMaxAgeRoundTrip', optOuts, withSentinel)) {
+      assert.match(withSentinel, new RegExp('\\b' + SENTINEL_MAX_AGE + '\\b'),
+        'STS rendering ignored output.hstsMaxAge (sentinel value not present). ' +
+        'Helpers must splice the configured max-age, not hard-code 63072000.');
+      assert.doesNotMatch(withSentinel, /\b63072000\b/,
+        'STS rendering hard-codes max-age=63072000 instead of using output.hstsMaxAge.');
+    }
   });
 
   // ----- 7. Curves-emitted assertion ----------------------------------------
