@@ -57,6 +57,7 @@ const FILE_EXTENSIONS = {
   haproxy:       'cfg',
   iis:           'ps1',
   jetty:         'xml',
+  kubernetes:    'yaml',
   lighttpd:      'conf',
   litespeed:     'conf',
   mysql:         'cnf',

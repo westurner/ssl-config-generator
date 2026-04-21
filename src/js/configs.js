@@ -368,6 +368,55 @@ module.exports = {
     tls13: '9.4.12',
     usesOpenssl: false,
   },
+  kubernetes: {
+    cipherFormat: 'go',
+    latestVersion: '1.34.0',
+    eolBefore: '1.32.0',
+    name: 'Kubernetes',
+    // Kubernetes components (kube-apiserver, kubelet, kube-controller-
+    // manager, kube-scheduler, kube-proxy) are Go binaries built against
+    // crypto/tls; they have no separate TLS implementation. usesOpenssl
+    // is therefore false for the same reason it's false for go.
+    usesOpenssl: false,
+    // helpers/kubernetes.js emits tlsCipherSuites: (in YAML) and
+    // --tls-cipher-suites= (as a comment), both consuming Go's IANA
+    // cipher names. KubeletConfiguration / kube-apiserver have accepted
+    // the field since at least v1.10 (when KubeletConfiguration was
+    // introduced); older versions used flags only — still supported.
+    supportsCipherSelection: true,
+    // No `--tls-curve-preferences` / `tlsCurvePreferences` knob exists
+    // in Kubernetes today — kube-apiserver and kubelet inherit whatever
+    // crypto/tls negotiates by default. The capability table surfaces
+    // this so operators don't expect a per-curve mitigation knob.
+    supportsCurveSelection: false,
+    // kube-apiserver gained --strict-transport-security-directives in
+    // v1.28 (Aug 2023) — see the Kubernetes 1.28 release notes /
+    // command-line reference. kubelet has no HSTS surface at any
+    // version; helpers/kubernetes.js emits the apiserver flag as a
+    // comment when form.hsts is set on a 1.28+ cluster, and emits a
+    // "front with a reverse proxy" note on older versions.
+    supportsHsts: '1.28.0',
+    // Kubernetes does not surface OCSP stapling: neither kube-apiserver
+    // nor kubelet wires SSL_CTX_set_tlsext_status_cb-equivalents
+    // through its config, and crypto/tls itself doesn't ship a
+    // production stapler. Front the apiserver with a TLS-terminating
+    // reverse proxy (nginx, HAProxy, Caddy) for stapling.
+    supportsOcspStapling: false,
+    // PQ readiness is inherited from the Go runtime Kubernetes was
+    // built with (see helpers/kubernetes.js header). Kubernetes 1.34
+    // (Aug 2025) was the first release built with Go 1.24, the first
+    // Go release that added X25519MLKEM768 to crypto/tls's default
+    // group preference list — so 1.34 is the first Kubernetes that
+    // negotiates ML-KEM hybrid key exchange out of the box. See the
+    // "Post-Quantum Cryptography in Kubernetes" blog post (k8s-pqc-blog
+    // in citations.bib).
+    supportsPq: '1.34.0',
+    // kube-apiserver --tls-min-version=VersionTLS13 has been accepted
+    // since v1.16 (when --tls-min-version itself was promoted out of
+    // alpha alongside the feature gate that exposed Go 1.12's TLS 1.3
+    // implementation).
+    tls13: '1.16.0',
+  },
   lighttpd: {
     latestVersion: '1.4.82',
     eolBefore: '1.4.69',
