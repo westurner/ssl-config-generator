@@ -268,7 +268,7 @@ spellings to be defensive.
   PQ surface leave it unset; the harness then doesn't run the
   PQ-readiness assertion. Existing opt-in helpers: `caddy`, `gnutls`,
   `go`, `opensslcnf`, `python`, `rust`, `s2n`, `traefik`, `openldap`,
-  `iis`.
+  `iis`, `haproxy`, `lighttpd`.
 * `state.js` forces `protocols=['TLSv1.3']` when `pqMode === 'only'` —
   ML-KEM hybrid groups are TLS 1.3-only (`key_share` extension). A helper
   that supports PQ should still **defensively** pin its minimum-version

@@ -301,13 +301,23 @@ module.exports = {
     // HAProxy 1.5+ (the `http-response` ruleset family arrived with the
     // 1.5 SSL/HTTP overhaul).
     supportsHsts: '1.5.0',
-    // No OCSP-stapling directive emitted by helpers/haproxy.js (HAProxy
-    // does support stapling via an external file; the helper does not
-    // wire it).
-    supportsOcspStapling: false,
-    // No PQ-aware code path; PQ key exchange depends on the linked
-    // OpenSSL but the helper does not emit a hybrid-group token.
-    supportsPq: false,
+    // HAProxy stapling works via an external OCSP response file: place
+    // <crt>.ocsp (DER-encoded OCSP response) alongside the certificate
+    // file referenced by `bind ... crt /path/to/<cert>`. HAProxy 1.6+
+    // discovers the file at startup and serves it as a stapled response;
+    // 1.7+ allows runtime refresh via `set ssl ocsp-response` over the
+    // admin socket; 2.8+ adds a built-in auto-updater
+    // (`tune.ssl.ocsp-update.mode on`). The helper emits an explanatory
+    // comment block (no directive needed for the file-discovery path).
+    supportsOcspStapling: '1.6.0',
+    // PQ key exchange piggybacks on the OpenSSL `Groups` list emitted via
+    // `ssl-default-bind-curves` / `ssl-default-server-curves` (HAProxy
+    // 2.9+). When form.pq !== 'none' those curves include the ML-KEM
+    // hybrid groups (X25519MLKEM768 et al.); the linked OpenSSL must be
+    // ≥ 3.5.0 to recognise the names natively (older OpenSSL needs the
+    // oqs-provider). The helper emits a `# WARNING:` block when HAProxy
+    // < 2.9 (no curves directive available) or OpenSSL < 3.5.
+    supportsPq: '2.9.0',
     tls13: '1.8.0',
   },
   iis: {
@@ -379,9 +389,14 @@ module.exports = {
     // unknown") rather than a version string.
     supportsHsts: true,
     supportsOcspStapling: '1.4.56',
-    // No PQ-aware code path; PQ groups depend on linked OpenSSL but
-    // lighttpd does not emit a hybrid-group token.
-    supportsPq: false,
+    // helpers/lighttpd.js:64 emits ssl.openssl.ssl-conf-cmd ("Curves" => …)
+    // from output.tlsCurves on lighttpd 1.4.50+ (when ssl-conf-cmd was
+    // introduced). When form.pq !== 'none' those tlsCurves include the
+    // ML-KEM hybrid groups (X25519MLKEM768 et al.); the underlying
+    // OpenSSL must be ≥ 3.5.0 to recognise the names natively (older
+    // OpenSSL needs the oqs-provider). The helper emits a `# WARNING:`
+    // block when OpenSSL < 3.5.0 so the operator sees the dependency.
+    supportsPq: '1.4.50',
     tls13: '1.4.48',
   },
   litespeed: {

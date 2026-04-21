@@ -17,6 +17,7 @@ runStandardHelperSuite({
   helper: lighttpd,
   serverVersion: SERVER_VERSION,
   supportsHsts: true,
+  supportsPq: true,
   cipherFormat: 'openssl',
   formOverrides: { opensslVersion: '3.0.0' },
   protocolDirective: {

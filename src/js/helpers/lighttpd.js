@@ -16,6 +16,23 @@ export default (form, output) => {
       '#server.port = 80\n'+
       '$SERVER["socket"] == "[::]:80" { }\n';
 
+ // Post-quantum hybrid groups (X25519MLKEM768, SecP256r1MLKEM768,
+ // SecP384r1MLKEM1024) are passed through to OpenSSL via
+ // ssl.openssl.ssl-conf-cmd ("Curves" => ...) below (lighttpd 1.4.50+
+ // with mod_openssl). The underlying OpenSSL must be 3.5.0+ to recognise
+ // those names natively; older OpenSSL needs the oqs-provider from
+ // liboqs. Surface the dependency so the operator does not silently lose
+ // the PQ key exchange they selected.
+ if (form.pq && form.pq !== 'none' && !minver("3.5.0", form.opensslVersion)) {
+    conf +=
+      '\n'+
+      '# WARNING: built-in ML-KEM hybrid groups (X25519MLKEM768,\n'+
+      '#          SecP256r1MLKEM768, SecP384r1MLKEM1024) require\n'+
+      '#          OpenSSL 3.5.0 or newer linked into mod_openssl.\n'+
+      '#          Earlier OpenSSL needs the "oqs-provider" from liboqs\n'+
+      '#          (loaded via openssl.cnf) to expose these groups.\n';
+ }
+
  if (minver("1.4.50", form.serverVersion)) {
 
     conf +=

@@ -205,6 +205,7 @@
               <th scope="col">HSTS<code class="d-block small text-muted font-weight-normal">supportsHsts</code></th>
               <th scope="col">OCSP stapling<code class="d-block small text-muted font-weight-normal">supportsOcspStapling</code></th>
               <th scope="col">PQ<code class="d-block small text-muted font-weight-normal">supportsPq</code></th>
+              <th scope="col">Helper</th>
             </tr>
           </thead>
           <tbody>
@@ -240,6 +241,7 @@
               <td><%= cap(c.supportsHsts) %></td>
               <td><%= cap(c.supportsOcspStapling) %></td>
               <td><%= cap(c.supportsPq) %></td>
+              <td><%= c.name %></td>
             </tr>
             <% }) %>
           </tbody>

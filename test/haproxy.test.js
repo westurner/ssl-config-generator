@@ -11,6 +11,7 @@ runStandardHelperSuite({
   helper: haproxy,
   serverVersion: '3.0',
   supportsHsts: true,
+  supportsPq: true,
   cipherFormat: 'openssl',
   protocolDirective: {
     // HAProxy 2.2+ emits "ssl-min-ver" with the lowest version in the list.
