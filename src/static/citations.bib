@@ -336,3 +336,27 @@
   howpublished = {\url{https://github.com/microsoft/SymCrypt}},
   note         = {SymCrypt is the FIPS-validated cryptographic library backing Schannel, BCrypt and CNG on Windows. ML-KEM-512/768/1024 implementations were added in 2024-2025; this is the upstream that surfaces ML-KEM hybrids to Schannel for the IIS helper's PQ-only / hybrid modes.},
 }
+
+@misc{k8s-pqc-blog,
+  title        = {{Post-Quantum Cryptography in Kubernetes}},
+  author       = {{The Kubernetes Authors}},
+  year         = {2025},
+  howpublished = {\url{https://kubernetes.io/blog/2025/07/18/pqc-in-k8s/}},
+  note         = {Kubernetes blog post (2025-07-18) documenting how ML-KEM hybrid key exchange (X25519MLKEM768) reaches Kubernetes components via the Go runtime they are built with. Kubernetes 1.34 (Aug 2025) was the first release built with Go 1.24, the first Go release that added X25519MLKEM768 to crypto/tls's default group preference list. The post also documents the GODEBUG=tlsmlkem kill-switch (Go 1.24 / 1.25) and explains why Kubernetes does not expose Config.CurvePreferences directly. Cited by configs.js#kubernetes.supportsPq and helpers/kubernetes.js's PQ comment block.},
+}
+
+@misc{k8s-kubelet-config,
+  title        = {{Kubernetes --- KubeletConfiguration (v1beta1) reference}},
+  author       = {{The Kubernetes Authors}},
+  year         = {2025},
+  howpublished = {\url{https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/}},
+  note         = {Reference for the kubelet's --config YAML file (KubeletConfiguration v1beta1), including the tlsMinVersion, tlsCipherSuites, tlsCertFile and tlsPrivateKeyFile fields that helpers/kubernetes.js emits. tlsMinVersion accepts VersionTLS10 / VersionTLS11 / VersionTLS12 / VersionTLS13 (the Go crypto/tls constant names); tlsCipherSuites takes IANA cipher names and only applies to TLS 1.2 and earlier (TLS 1.3 cipher suites are not configurable in Go's crypto/tls).},
+}
+
+@misc{k8s-apiserver-flags,
+  title        = {{Kubernetes --- kube-apiserver command-line reference}},
+  author       = {{The Kubernetes Authors}},
+  year         = {2025},
+  howpublished = {\url{https://kubernetes.io/docs/reference/command-line-tools-reference/kube-apiserver/}},
+  note         = {Reference for the kube-apiserver --tls-min-version, --tls-cipher-suites, --tls-cert-file, --tls-private-key-file, and --strict-transport-security-directives flags emitted (as comments) by helpers/kubernetes.js. --strict-transport-security-directives was added in Kubernetes v1.28 (Aug 2023); earlier versions silently ignore the flag. The flag list mirrors KubeletConfiguration's tls* fields one-for-one.},
+}
