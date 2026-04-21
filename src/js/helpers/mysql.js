@@ -1,3 +1,5 @@
+import pqOpensslCnfNote from './pq-openssl-cnf-note.js';
+
 export default (form, output) => {
  var conf =
       '# '+output.header+'\n'+
@@ -13,5 +15,5 @@ export default (form, output) => {
       'ssl-cipher = '+output.ciphers.join(':')+'\n';
  }
 
-  return conf;
+  return conf + pqOpensslCnfNote(form, output);
 };

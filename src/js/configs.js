@@ -80,6 +80,36 @@
 //   making procurement decisions can weigh "fast mitigation latency" as
 //   one of the criteria.
 //
+// pqViaOpensslCnf escape-hatch flag
+// ---------------------------------
+// Some servers expose NO native PQ knob (no group / curve directive, no
+// managed-policy alias, no GODEBUG-style runtime toggle) but still link
+// libssl/libcrypto and therefore inherit ML-KEM hybrid groups from the
+// system openssl.cnf — specifically from the
+// `[system_default_sect] Groups = …` line that the "OpenSSL (openssl.cnf)"
+// target in this generator already knows how to render. For those
+// helpers, the operator's only PQ migration path is to edit openssl.cnf
+// (or point the binary at a different one via the OPENSSL_CONF
+// environment variable). pqViaOpensslCnf:true marks these helpers so:
+//
+//   - render.js exposes the flag verbatim on output.pqViaOpensslCnf;
+//   - the helper itself emits a short cross-reference comment in its
+//     rendered config when form.pq !== 'none' that points the operator
+//     at the openssl.cnf target and at the OPENSSL_CONF env-var override.
+//
+// Required preconditions: usesOpenssl:true (libssl is what reads
+// openssl.cnf — pure-Go / pure-Rust / Schannel binaries cannot inherit
+// from it) AND supportsPq:false (helpers with their own PQ surface
+// should expose it directly, not punt to openssl.cnf). pqViaOpensslCnf
+// is therefore weaker than supportsPq and is mutually exclusive with
+// usesOpenssl:false. Today this applies to: coturn, litespeed, mysql,
+// openlitespeed, redis, squid.
+//   - pqViaOpensslCnf:true   → escape-hatch is available; helper emits a
+//                              cross-reference comment.
+//   - pqViaOpensslCnf:false  → no escape hatch (or it's already covered
+//                              by a stronger flag); the helper says
+//                              nothing extra.
+//
 // cipherFormat is assumed to be 'openssl' unless defined otherwise
 
 
@@ -182,8 +212,14 @@ module.exports = {
     supportsHsts: false,
     // No `cert-staple` / OCSP directive in helpers/coturn.js.
     supportsOcspStapling: false,
-    // No PQ-aware code path.
+    // No PQ-aware code path. coturn links libssl, however, so the
+    // operator can still negotiate ML-KEM hybrid groups by configuring
+    // openssl.cnf — see pqViaOpensslCnf below.
     supportsPq: false,
+    // libssl-linked binary with no native group/curve directive: ML-KEM
+    // hybrids reach the wire via openssl.cnf [system_default_sect]
+    // Groups (or via OPENSSL_CONF= pointing at a per-process override).
+    pqViaOpensslCnf: true,
     tls13: '4.6.2',
   },
   dovecot: {
@@ -461,8 +497,11 @@ module.exports = {
     // block when form.hsts is set.
     supportsHsts: true,
     supportsOcspStapling: '1.2',
-    // No PQ-aware code path.
+    // No PQ-aware code path. LiteSpeed links libssl, so the operator
+    // can still negotiate ML-KEM hybrid groups via openssl.cnf — see
+    // pqViaOpensslCnf below.
     supportsPq: false,
+    pqViaOpensslCnf: true,
     tls13: '5.4.12',
   },
   mysql: {
@@ -478,8 +517,11 @@ module.exports = {
     supportsHsts: false,
     // No OCSP-stapling directive in helpers/mysql.js.
     supportsOcspStapling: false,
-    // No PQ-aware code path.
+    // No PQ-aware code path. mysqld links libssl, so the operator can
+    // still negotiate ML-KEM hybrid groups via openssl.cnf — see
+    // pqViaOpensslCnf below.
     supportsPq: false,
+    pqViaOpensslCnf: true,
     tls13: '8.0.16',
   },
   nginx: {
@@ -554,8 +596,11 @@ module.exports = {
     // helpers/openlitespeed.js:46-58 emits HSTS via `<extraHeaders>`.
     supportsHsts: true,
     supportsOcspStapling: '1.2',
-    // No PQ-aware code path.
+    // No PQ-aware code path. OpenLiteSpeed links libssl, so the operator
+    // can still negotiate ML-KEM hybrid groups via openssl.cnf — see
+    // pqViaOpensslCnf below.
     supportsPq: false,
+    pqViaOpensslCnf: true,
     tls13: '1.4.35',
   },
   openldap: {
@@ -728,8 +773,11 @@ module.exports = {
     supportsCipherSelection: '6.0.0',
     // No OCSP-stapling directive in helpers/redis.js.
     supportsOcspStapling: false,
-    // No PQ-aware code path.
+    // No PQ-aware code path. Redis 6+ links libssl, so the operator can
+    // still negotiate ML-KEM hybrid groups via openssl.cnf — see
+    // pqViaOpensslCnf below.
     supportsPq: false,
+    pqViaOpensslCnf: true,
     tls13: '6.0',
   },
   rust: {
@@ -791,8 +839,11 @@ module.exports = {
     supportsHsts: false,
     // No OCSP-stapling directive in helpers/squid.js.
     supportsOcspStapling: false,
-    // No PQ-aware code path.
+    // No PQ-aware code path. Squid links libssl, so the operator can
+    // still negotiate ML-KEM hybrid groups via openssl.cnf — see
+    // pqViaOpensslCnf below.
     supportsPq: false,
+    pqViaOpensslCnf: true,
     tls13: '4',
   },
   stunnel: {

@@ -1,4 +1,5 @@
 import minver from './minver.js';
+import pqOpensslCnfNote from './pq-openssl-cnf-note.js';
 
 export default (form, output) => {
  var conf =
@@ -41,5 +42,5 @@ export default (form, output) => {
     conf = '';
  }
 
-  return conf;
+  return conf + (conf ? pqOpensslCnfNote(form, output) : '');
 };
