@@ -2495,9 +2495,31 @@
       "guideline": "5.7",
       "profile": "modern",
       "pqMode": "none",
+      "hsts": false,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g5.7__v3.0__modern__pq-none__hsts0__ocsp1.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "5.7",
+      "profile": "modern",
+      "pqMode": "none",
       "hsts": true,
       "ocsp": false,
       "file": "haproxy/haproxy__g5.7__v3.0__modern__pq-none__hsts1__ocsp0.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "5.7",
+      "profile": "modern",
+      "pqMode": "none",
+      "hsts": true,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g5.7__v3.0__modern__pq-none__hsts1__ocsp1.cfg"
     },
     {
       "server": "haproxy",
@@ -2517,9 +2539,31 @@
       "guideline": "5.7",
       "profile": "modern",
       "pqMode": "hybrid",
+      "hsts": false,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g5.7__v3.0__modern__pq-hybrid__hsts0__ocsp1.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "5.7",
+      "profile": "modern",
+      "pqMode": "hybrid",
       "hsts": true,
       "ocsp": false,
       "file": "haproxy/haproxy__g5.7__v3.0__modern__pq-hybrid__hsts1__ocsp0.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "5.7",
+      "profile": "modern",
+      "pqMode": "hybrid",
+      "hsts": true,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g5.7__v3.0__modern__pq-hybrid__hsts1__ocsp1.cfg"
     },
     {
       "server": "haproxy",
@@ -2539,9 +2583,31 @@
       "guideline": "5.7",
       "profile": "modern",
       "pqMode": "only",
+      "hsts": false,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g5.7__v3.0__modern__pq-only__hsts0__ocsp1.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "5.7",
+      "profile": "modern",
+      "pqMode": "only",
       "hsts": true,
       "ocsp": false,
       "file": "haproxy/haproxy__g5.7__v3.0__modern__pq-only__hsts1__ocsp0.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "5.7",
+      "profile": "modern",
+      "pqMode": "only",
+      "hsts": true,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g5.7__v3.0__modern__pq-only__hsts1__ocsp1.cfg"
     },
     {
       "server": "haproxy",
@@ -2561,9 +2627,31 @@
       "guideline": "5.7",
       "profile": "intermediate",
       "pqMode": "none",
+      "hsts": false,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g5.7__v3.0__intermediate__pq-none__hsts0__ocsp1.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "5.7",
+      "profile": "intermediate",
+      "pqMode": "none",
       "hsts": true,
       "ocsp": false,
       "file": "haproxy/haproxy__g5.7__v3.0__intermediate__pq-none__hsts1__ocsp0.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "5.7",
+      "profile": "intermediate",
+      "pqMode": "none",
+      "hsts": true,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g5.7__v3.0__intermediate__pq-none__hsts1__ocsp1.cfg"
     },
     {
       "server": "haproxy",
@@ -2583,9 +2671,31 @@
       "guideline": "5.7",
       "profile": "intermediate",
       "pqMode": "hybrid",
+      "hsts": false,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g5.7__v3.0__intermediate__pq-hybrid__hsts0__ocsp1.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "5.7",
+      "profile": "intermediate",
+      "pqMode": "hybrid",
       "hsts": true,
       "ocsp": false,
       "file": "haproxy/haproxy__g5.7__v3.0__intermediate__pq-hybrid__hsts1__ocsp0.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "5.7",
+      "profile": "intermediate",
+      "pqMode": "hybrid",
+      "hsts": true,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g5.7__v3.0__intermediate__pq-hybrid__hsts1__ocsp1.cfg"
     },
     {
       "server": "haproxy",
@@ -2605,9 +2715,31 @@
       "guideline": "5.7",
       "profile": "intermediate",
       "pqMode": "only",
+      "hsts": false,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g5.7__v3.0__intermediate__pq-only__hsts0__ocsp1.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "5.7",
+      "profile": "intermediate",
+      "pqMode": "only",
       "hsts": true,
       "ocsp": false,
       "file": "haproxy/haproxy__g5.7__v3.0__intermediate__pq-only__hsts1__ocsp0.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "5.7",
+      "profile": "intermediate",
+      "pqMode": "only",
+      "hsts": true,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g5.7__v3.0__intermediate__pq-only__hsts1__ocsp1.cfg"
     },
     {
       "server": "haproxy",
@@ -2627,9 +2759,31 @@
       "guideline": "5.7",
       "profile": "old",
       "pqMode": "none",
+      "hsts": false,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g5.7__v3.0__old__pq-none__hsts0__ocsp1.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "5.7",
+      "profile": "old",
+      "pqMode": "none",
       "hsts": true,
       "ocsp": false,
       "file": "haproxy/haproxy__g5.7__v3.0__old__pq-none__hsts1__ocsp0.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "5.7",
+      "profile": "old",
+      "pqMode": "none",
+      "hsts": true,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g5.7__v3.0__old__pq-none__hsts1__ocsp1.cfg"
     },
     {
       "server": "haproxy",
@@ -2649,9 +2803,31 @@
       "guideline": "5.7",
       "profile": "old",
       "pqMode": "hybrid",
+      "hsts": false,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g5.7__v3.0__old__pq-hybrid__hsts0__ocsp1.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "5.7",
+      "profile": "old",
+      "pqMode": "hybrid",
       "hsts": true,
       "ocsp": false,
       "file": "haproxy/haproxy__g5.7__v3.0__old__pq-hybrid__hsts1__ocsp0.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "5.7",
+      "profile": "old",
+      "pqMode": "hybrid",
+      "hsts": true,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g5.7__v3.0__old__pq-hybrid__hsts1__ocsp1.cfg"
     },
     {
       "server": "haproxy",
@@ -2671,9 +2847,31 @@
       "guideline": "5.7",
       "profile": "old",
       "pqMode": "only",
+      "hsts": false,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g5.7__v3.0__old__pq-only__hsts0__ocsp1.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "5.7",
+      "profile": "old",
+      "pqMode": "only",
       "hsts": true,
       "ocsp": false,
       "file": "haproxy/haproxy__g5.7__v3.0__old__pq-only__hsts1__ocsp0.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "5.7",
+      "profile": "old",
+      "pqMode": "only",
+      "hsts": true,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g5.7__v3.0__old__pq-only__hsts1__ocsp1.cfg"
     },
     {
       "server": "haproxy",
@@ -2693,9 +2891,31 @@
       "guideline": "6.0",
       "profile": "modern",
       "pqMode": "none",
+      "hsts": false,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g6.0__v3.0__modern__pq-none__hsts0__ocsp1.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "6.0",
+      "profile": "modern",
+      "pqMode": "none",
       "hsts": true,
       "ocsp": false,
       "file": "haproxy/haproxy__g6.0__v3.0__modern__pq-none__hsts1__ocsp0.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "6.0",
+      "profile": "modern",
+      "pqMode": "none",
+      "hsts": true,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g6.0__v3.0__modern__pq-none__hsts1__ocsp1.cfg"
     },
     {
       "server": "haproxy",
@@ -2715,9 +2935,31 @@
       "guideline": "6.0",
       "profile": "modern",
       "pqMode": "hybrid",
+      "hsts": false,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g6.0__v3.0__modern__pq-hybrid__hsts0__ocsp1.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "6.0",
+      "profile": "modern",
+      "pqMode": "hybrid",
       "hsts": true,
       "ocsp": false,
       "file": "haproxy/haproxy__g6.0__v3.0__modern__pq-hybrid__hsts1__ocsp0.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "6.0",
+      "profile": "modern",
+      "pqMode": "hybrid",
+      "hsts": true,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g6.0__v3.0__modern__pq-hybrid__hsts1__ocsp1.cfg"
     },
     {
       "server": "haproxy",
@@ -2737,9 +2979,31 @@
       "guideline": "6.0",
       "profile": "modern",
       "pqMode": "only",
+      "hsts": false,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g6.0__v3.0__modern__pq-only__hsts0__ocsp1.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "6.0",
+      "profile": "modern",
+      "pqMode": "only",
       "hsts": true,
       "ocsp": false,
       "file": "haproxy/haproxy__g6.0__v3.0__modern__pq-only__hsts1__ocsp0.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "6.0",
+      "profile": "modern",
+      "pqMode": "only",
+      "hsts": true,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g6.0__v3.0__modern__pq-only__hsts1__ocsp1.cfg"
     },
     {
       "server": "haproxy",
@@ -2759,9 +3023,31 @@
       "guideline": "6.0",
       "profile": "intermediate",
       "pqMode": "none",
+      "hsts": false,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g6.0__v3.0__intermediate__pq-none__hsts0__ocsp1.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "6.0",
+      "profile": "intermediate",
+      "pqMode": "none",
       "hsts": true,
       "ocsp": false,
       "file": "haproxy/haproxy__g6.0__v3.0__intermediate__pq-none__hsts1__ocsp0.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "6.0",
+      "profile": "intermediate",
+      "pqMode": "none",
+      "hsts": true,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g6.0__v3.0__intermediate__pq-none__hsts1__ocsp1.cfg"
     },
     {
       "server": "haproxy",
@@ -2781,9 +3067,31 @@
       "guideline": "6.0",
       "profile": "intermediate",
       "pqMode": "hybrid",
+      "hsts": false,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g6.0__v3.0__intermediate__pq-hybrid__hsts0__ocsp1.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "6.0",
+      "profile": "intermediate",
+      "pqMode": "hybrid",
       "hsts": true,
       "ocsp": false,
       "file": "haproxy/haproxy__g6.0__v3.0__intermediate__pq-hybrid__hsts1__ocsp0.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "6.0",
+      "profile": "intermediate",
+      "pqMode": "hybrid",
+      "hsts": true,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g6.0__v3.0__intermediate__pq-hybrid__hsts1__ocsp1.cfg"
     },
     {
       "server": "haproxy",
@@ -2803,9 +3111,31 @@
       "guideline": "6.0",
       "profile": "intermediate",
       "pqMode": "only",
+      "hsts": false,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g6.0__v3.0__intermediate__pq-only__hsts0__ocsp1.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "6.0",
+      "profile": "intermediate",
+      "pqMode": "only",
       "hsts": true,
       "ocsp": false,
       "file": "haproxy/haproxy__g6.0__v3.0__intermediate__pq-only__hsts1__ocsp0.cfg"
+    },
+    {
+      "server": "haproxy",
+      "serverVersion": "3.0",
+      "opensslVersion": "3.6.1",
+      "guideline": "6.0",
+      "profile": "intermediate",
+      "pqMode": "only",
+      "hsts": true,
+      "ocsp": true,
+      "file": "haproxy/haproxy__g6.0__v3.0__intermediate__pq-only__hsts1__ocsp1.cfg"
     },
     {
       "server": "iis",

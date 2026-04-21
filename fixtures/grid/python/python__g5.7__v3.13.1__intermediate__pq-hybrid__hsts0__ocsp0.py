@@ -14,6 +14,19 @@
 # Requires:
 #   - Python >= 3.10 (modern SSLContext API; older 3.x works with
 #                     adjustments).
+#
+# OCSP stapling: server-side OCSP stapling is NOT exposed by
+# CPython's `ssl` module (as of 3.13). There is no
+# `SSLContext.set_ocsp_response()` and the `SSL_CTX_set_tlsext_status_cb`
+# OpenSSL hook is not wrapped. The `cryptography` package can
+# parse OCSP responses (`cryptography.x509.ocsp`) but does not
+# wire them into an SSLContext for stapling. PEP 543 (a unified
+# TLS API that would have included stapling hooks) was deferred.
+# Recommendation: terminate TLS in a fronting reverse proxy that
+# staples (nginx / HAProxy / Caddy — see those targets in this
+# tool), or refresh a <cert>.ocsp file out-of-band (cron +
+# `openssl ocsp -respout`) and serve the Python app behind a
+# stapling-aware proxy.
 #   - Python >= 3.13 for SSLContext.set_groups(); earlier versions
 #                     can pin a single curve via set_ecdh_curve()
 #                     (see fallback below) or rely on openssl.cnf.
