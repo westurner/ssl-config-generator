@@ -21,7 +21,17 @@
 #
 # Locate your active openssl.cnf with:
 #     openssl version -d
-# (the file is named "openssl.cnf" in that directory).
+# (the file is named "openssl.cnf" in that directory). To use a
+# different openssl.cnf for one process only — e.g. to apply this
+# snippet to a single server binary without editing the system-wide
+# file — set the OPENSSL_CONF environment variable before launching
+# the process:
+#     OPENSSL_CONF=/path/to/your-openssl.cnf <binary> ...
+# libssl has honoured OPENSSL_CONF since OpenSSL 0.9.7 (see
+# openssl-config(5) and OPENSSL_init_crypto(3)). This is the
+# per-process knob referenced by other targets in this generator
+# (Coturn, MySQL, Redis, Squid, LiteSpeed, OpenLiteSpeed) that
+# have no native group / curve directive.
 #
 # To inspect available providers / KEMs / groups:
 #     openssl version

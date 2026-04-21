@@ -207,6 +207,7 @@ export function makeOutput(profile, { cipherFormat = 'openssl', ...overrides } =
     supportsCipherSelection: true,
     supportsCurveSelection: true,
     supportsPq: false,
+    pqViaOpensslCnf: false,
 
     pqMode: 'none',
   }, overrides);

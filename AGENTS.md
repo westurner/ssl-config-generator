@@ -162,13 +162,14 @@ recipe:
 
    | Flag                       | Default | Set to `false` (or omit) when …                                                                                                       |
    | -------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-   | `usesOpenssl`              | `true`  | The server has its own TLS stack (Go, rustls, Schannel/IIS, s2n-tls, …).                                                              |
+   | `usesOpenssl`              | **required** — declare explicitly. The capability-flag invariant (see `src/js/configs.js` header) requires every helper to declare this as `true` (links libssl/libcrypto, inherits openssl.cnf) or `false` (independent TLS stack: Go, rustls, Schannel/IIS, s2n-tls, …). There is no longer a runtime fallback. | (no longer a default) |
    | `supportsHsts`             | `true`  | Not an HTTP server (Postfix, Dovecot, OpenLDAP, Coturn, MySQL, …).                                                                    |
    | `supportsCipherSelection`  | `true`  | The server only exposes named "policies" (AWS ALB, s2n-tls).                                                                          |
    | `supportsCurveSelection`   | `true`  | The server has no per-curve / per-group knob (MySQL, Tomcat, Jetty, Redis, Squid, Coturn, OracleHTTP, the LiteSpeed family, AWS …).   |
    | `supportsOcspStapling`     | `false` | Provide a min-version string (e.g. `'2.4.13'`) instead of a boolean if the feature was added in a specific release.                   |
    | `showSupports`             | `true`  | Don't render the "Supports …" oldest-clients footer.                                                                                  |
    | `supportsPq`               | `false` | **Opt-in only.** Set `true` *after* the helper has a real PQ-aware code path — one of the three surfaces below.                       |
+   | `pqViaOpensslCnf`          | `false` | Opt-in only. Set `true` for helpers that have NO native PQ knob *but* link libssl/libcrypto and therefore inherit ML-KEM hybrid groups from `openssl.cnf` (`[system_default_sect] Groups = …`). The helper then renders a short cross-reference to the `openssl.cnf` target — and to the `OPENSSL_CONF` environment variable, the standard libssl override for "use a different openssl.cnf at runtime" — when `form.pq !== 'none'`. Mutually exclusive with `usesOpenssl: false`; orthogonal to (and weaker than) `supportsPq`. |
    | `cipherFormat`             | `'openssl'` | Set `'iana'` for Schannel / Java / rustls; set `'go'` for Go / Caddy / Traefik (state.js then puts the IANA cipher list into `output.ciphers`). |
 
    The three PQ "code paths" referenced above — pick whichever one the

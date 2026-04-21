@@ -212,6 +212,7 @@ export default function pureState({
       supportsCipherSelection: configs[server].supportsCipherSelection ?? null,
       supportsCurveSelection:  configs[server].supportsCurveSelection  ?? null,
       supportsPq:              configs[server].supportsPq              ?? null,
+      pqViaOpensslCnf:         configs[server].pqViaOpensslCnf         ?? null,
       tlsCurves,
       usesDhe: ciphers.join(':').includes(':DHE') || ciphers.join(':').includes('_DHE_'),
       usesOpenssl:             configs[server].usesOpenssl             ?? null,

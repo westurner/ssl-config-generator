@@ -1,3 +1,5 @@
+import pqOpensslCnfNote from './pq-openssl-cnf-note.js';
+
 export default (form, output) => {
   var conf =
       '# '+output.header+'\n'+
@@ -58,5 +60,5 @@ export default (form, output) => {
       '</virtualHostConfig>\n';
   }
 
-  return conf;
+  return conf + pqOpensslCnfNote(form, output);
 };

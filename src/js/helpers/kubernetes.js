@@ -32,9 +32,19 @@
 //
 // Kubernetes does NOT expose a curve / group preference knob — neither
 // `--tls-curve-preferences` nor a tlsCurvePreferences field on
-// KubeletConfiguration. Whatever crypto/tls negotiates by default is
-// what ships. configs.js sets supportsCurveSelection:false to surface
-// this in the capability table.
+// KubeletConfiguration. The underlying Go field is
+// `crypto/tls.Config.CurvePreferences []CurveID`, which determines the
+// order TLS named groups (a.k.a. "curves") are offered and selected for
+// ECDHE / hybrid key exchange — see https://pkg.go.dev/crypto/tls#Config
+// and the "Go" target in this generator for what setting it from
+// application code looks like. Kubernetes does not surface this field
+// in any user-facing configuration; whatever crypto/tls negotiates by
+// default is what ships. configs.js sets supportsCurveSelection:false
+// to make that limitation explicit in the capability table. This also
+// means Kubernetes does NOT inherit group preferences from openssl.cnf
+// (Go's crypto/tls is a pure-Go implementation that ignores libssl
+// configuration entirely); the only lever for ML-KEM hybrid key
+// exchange is the Go runtime version Kubernetes was built with.
 //
 // Post-quantum hybrid groups (X25519MLKEM768) reach Kubernetes the same
 // way: through the Go runtime the components were built with. Go 1.24

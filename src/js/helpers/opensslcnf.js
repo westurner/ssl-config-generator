@@ -6,6 +6,25 @@ import minver from './minver.js';
 // `ssl` module (CPython calls `OPENSSL_init_ssl` / loads the system
 // openssl.cnf), curl, libpq, and many others.
 //
+// Locating / overriding the file at runtime
+// -----------------------------------------
+// The default location is reported by `openssl version -d` (typically
+// /etc/ssl/openssl.cnf on Linux, /usr/local/etc/openssl@3/openssl.cnf
+// on macOS Homebrew). To use a DIFFERENT openssl.cnf for a specific
+// process — e.g. to apply this snippet to one server binary without
+// touching the system-wide file — set the OPENSSL_CONF environment
+// variable before launching the process:
+//
+//     OPENSSL_CONF=/path/to/your-openssl.cnf <binary> ...
+//
+// libssl has honoured OPENSSL_CONF since OpenSSL 0.9.7; see
+// openssl-config(5) and OPENSSL_init_crypto(3). This is the same
+// override referenced by helpers tagged pqViaOpensslCnf:true in
+// configs.js (coturn, litespeed, mysql, openlitespeed, redis, squid):
+// those servers have no native group / curve directive, so OPENSSL_CONF
+// is the per-process knob for enabling ML-KEM hybrid key exchange
+// without modifying /etc/ssl/openssl.cnf system-wide.
+//
 // References (see src/static/citations.bib):
 //  - openssl-config(5):           https://docs.openssl.org/3.5/man5/config/
 //  - SSL_CONF_cmd(3):             https://docs.openssl.org/3.5/man3/SSL_CONF_cmd/
@@ -44,7 +63,17 @@ export default (form, output) => {
       '#\n'+
       '# Locate your active openssl.cnf with:\n'+
       '#     openssl version -d\n'+
-      '# (the file is named "openssl.cnf" in that directory).\n'+
+      '# (the file is named "openssl.cnf" in that directory). To use a\n'+
+      '# different openssl.cnf for one process only — e.g. to apply this\n'+
+      '# snippet to a single server binary without editing the system-wide\n'+
+      '# file — set the OPENSSL_CONF environment variable before launching\n'+
+      '# the process:\n'+
+      '#     OPENSSL_CONF=/path/to/your-openssl.cnf <binary> ...\n'+
+      '# libssl has honoured OPENSSL_CONF since OpenSSL 0.9.7 (see\n'+
+      '# openssl-config(5) and OPENSSL_init_crypto(3)). This is the\n'+
+      '# per-process knob referenced by other targets in this generator\n'+
+      '# (Coturn, MySQL, Redis, Squid, LiteSpeed, OpenLiteSpeed) that\n'+
+      '# have no native group / curve directive.\n'+
       '#\n'+
       '# To inspect available providers / KEMs / groups:\n'+
       '#     openssl version\n'+
