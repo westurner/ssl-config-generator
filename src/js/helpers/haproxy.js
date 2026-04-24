@@ -1,10 +1,19 @@
 import minver from './minver.js';
+import { safe } from './ctx.js';
 
 export default (form, output) => {
  // Only version 1.5.0 and newer support TLS
  if (!minver("1.5.0", form.serverVersion)) {
     return 'Sorry, TLS is not supported in this version of HAProxy.\n';
  }
+
+ // Per-template context (see ./ctx.js): every form.* value spliced into
+ // the rendered config string is filtered through safe() as defence in
+ // depth. Helpers MUST NOT splice form.* directly into a template.
+ const ctx = {
+   config: safe(form.config),
+   serverVersion: safe(form.serverVersion),
+ };
 
  function haproxy_ssl_default_opts (tag) {
    var conf =
@@ -39,7 +48,7 @@ export default (form, output) => {
       '# '+output.header+'\n'+
       '# '+output.link+'\n'+
       'global\n'+
-      '    # '+form.config+' configuration\n';
+      '    # '+ctx.config+' configuration\n';
 
  // Post-quantum hybrid groups (X25519MLKEM768, SecP256r1MLKEM768,
  // SecP384r1MLKEM1024) are passed through to OpenSSL via
@@ -106,7 +115,7 @@ export default (form, output) => {
    conf +=
       '\n'+
       '    # OCSP stapling: place a DER-encoded OCSP response next to the\n'+
-      '    # certificate as <crt>.ocsp; HAProxy '+(minver("1.6.0", form.serverVersion) ? form.serverVersion : '1.6+')+' loads it at startup.\n'+
+      '    # certificate as <crt>.ocsp; HAProxy '+(minver("1.6.0", form.serverVersion) ? ctx.serverVersion : '1.6+')+' loads it at startup.\n'+
       '    #   openssl ocsp -no_nonce -respout /path/to/<cert>.ocsp \\\n'+
       '    #     -issuer /path/to/intermediate.pem \\\n'+
       '    #     -cert   /path/to/<cert+privkey+intermediate> \\\n'+
@@ -124,7 +133,7 @@ export default (form, output) => {
    }
    else {
      conf +=
-      '    # HAProxy '+form.serverVersion+' has no runtime-refresh command;\n'+
+      '    # HAProxy '+ctx.serverVersion+' has no runtime-refresh command;\n'+
       '    # reload HAProxy after rewriting the .ocsp file to pick up changes.\n';
    }
  }

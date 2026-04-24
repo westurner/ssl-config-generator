@@ -1,5 +1,7 @@
 // IIS / Windows Schannel TLS configuration template.
 //
+import { safe } from './ctx.js';
+
 // IIS itself doesn't have a per-site cipher / protocol knob — it inherits
 // everything from the host's Schannel SSP (the same TLS stack used by every
 // .NET / WinHTTP / RDP / SMB consumer on the box). This helper therefore
@@ -160,6 +162,24 @@ export default (form, output) => {
   const SCHANNEL_BASE = 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\SCHANNEL';
   const CIPHER_KEY    = 'HKLM\\SOFTWARE\\Policies\\Microsoft\\Cryptography\\Configuration\\SSL\\00010002';
 
+  // Per-template context (see ./ctx.js): every form.* value spliced into
+  // the rendered PowerShell script is filtered through safe() as
+  // defence in depth. Helpers MUST NOT splice form.* directly into a
+  // template; the JS conditionals (`if (form.pq === 'only') …`) above
+  // are control flow, not template substitutions, and stay as-is. The
+  // input-validation throw above guarantees `form` is non-null here, so
+  // ctx.config falls back to the Mozilla "intermediate" default only
+  // for the (unreachable in production) case where state.js / a
+  // direct caller passed a form object without a `config` field.
+  // pqLabel is derived from a JS ternary into a fixed 2-element set
+  // ('ONLY' | 'HYBRID') — no form-string flow — so safe() would be a
+  // no-op; it is included in ctx purely so the template stays free of
+  // direct form.* references.
+  const ctx = {
+    config: safe(form.config || 'intermediate'),
+    pqLabel: form.pq === 'only' ? 'ONLY' : 'HYBRID',
+  };
+
   // ---- H2: build the protocol DO-plan ---------------------------------------
   // For every Schannel-known TLS version, decide whether it should be
   // ENABLED (in the operator's set) or DISABLED (not in the set). The
@@ -239,7 +259,7 @@ export default (form, output) => {
   if (form && (form.pq === 'only' || (form.pq === 'hybrid' && hasPqGroup))) {
     conf +=
       '#\n'+
-      '# PQ '+(form.pq === 'only' ? 'ONLY' : 'HYBRID')+' mode: this profile includes the X25519MLKEM768\n'+
+      '# PQ '+ctx.pqLabel+' mode: this profile includes the X25519MLKEM768\n'+
       '# hybrid post-quantum key-exchange group (Schannel name MLKEM768X25519).\n'+
       '# Hybrid ML-KEM in Schannel/SymCrypt is currently a Windows Insider /\n'+
       '# preview feature (see techcommunity.microsoft.com PQC announcement).\n'+
@@ -803,7 +823,7 @@ export default (form, output) => {
       '\n'+
       '# Note: the protocol DO-plan above EXPLICITLY disables every TLS version\n'+
       '# in '+JSON.stringify(Object.values(SCHANNEL_PROTOCOL_MAP))+' that is not in\n'+
-      '# the Mozilla '+(form && form.config ? form.config : 'intermediate')+' profile, by writing\n'+
+      '# the Mozilla '+ctx.config+' profile, by writing\n'+
       '# Enabled=0 / DisabledByDefault=1 under HKLM\\...\\SCHANNEL\\Protocols\\<name>\\Server\n'+
       '# and \\Client. This is intentional — the previous "leave at OS defaults"\n'+
       '# behaviour silently kept TLS 1.0 / 1.1 enabled on Server 2019/2022.\n'+

@@ -15,5 +15,6 @@ export default (form, output) => {
       'ssl-cipher = '+output.ciphers.join(':')+'\n';
  }
 
-  return conf + pqOpensslCnfNote(form, output);
+  conf += pqOpensslCnfNote(form, output);
+  return conf;
 };

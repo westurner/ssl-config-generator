@@ -51,5 +51,6 @@ export default (form, output) => {
       '  '+tlsprefix+'key=/path/to/private_key \\\n'+
       opts;
 
-  return conf + pqOpensslCnfNote(form, output);
+  conf += pqOpensslCnfNote(form, output);
+  return conf;
 };
