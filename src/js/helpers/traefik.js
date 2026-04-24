@@ -1,6 +1,16 @@
 import minver from './minver.js';
+import { safe } from './ctx.js';
 
 export default (form, output) => {
+ // Per-template context (see ./ctx.js): every form.* value spliced into
+ // the rendered config string is filtered through safe() as defence in
+ // depth. ctx.config is interpolated into a TOML bare-key
+ // (`[tls.options.<config>]`) as well as a string value, so the
+ // identifier-only allow-list in safe() also keeps the TOML key valid.
+ const ctx = {
+   config: safe(form.config),
+ };
+
  var tlsopts =
       '      minVersion = "'+(output.protocols[0] === 'TLSv1' ? 'VersionTLS10' : output.protocols[0].replace('TLSv1.', 'VersionTLS1'))+'"\n';
  // map output.tlsCurves strings into Traefik 'curvePreferences' strings
@@ -41,7 +51,7 @@ export default (form, output) => {
         : '')+
       '\n'+
       '    [http.routers.router-secure.tls]\n'+
-      '      options = "'+form.config+'"\n';
+      '      options = "'+ctx.config+'"\n';
 
   if (form.hsts) {
     conf +=
@@ -77,7 +87,7 @@ export default (form, output) => {
       '  keyFile = "/path/to/private_key"\n'+
       '\n'+
       '[tls.options]\n'+
-      '  [tls.options.'+form.config+']\n'+
+      '  [tls.options.'+ctx.config+']\n'+
       tlsopts;
  }
  else {

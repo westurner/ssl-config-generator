@@ -1,4 +1,5 @@
 import minver from './minver.js';
+import { safe } from './ctx.js';
 
 // lighttpd TLS defaults are incrementally updated over time to improve security
 // and the lighttpd TLS defaults are widely supported by clients.  The output of
@@ -10,6 +11,14 @@ import minver from './minver.js';
 // extra lines match or are exceeded by the lighttpd TLS defaults.
 
 export default (form, output) => {
+ // Per-template context (see ./ctx.js): every form.* value spliced into
+ // the rendered config string is filtered through safe() as defence in
+ // depth. Helpers MUST NOT splice form.* directly into a template.
+ const ctx = {
+   config: safe(form.config),
+   serverVersion: safe(form.serverVersion),
+ };
+
  var conf =
       '# '+output.header+'\n'+
       '# '+output.link+'\n'+
@@ -62,7 +71,7 @@ export default (form, output) => {
       'ssl.openssl.ssl-conf-cmd = ("MinProtocol" => "'+output.protocols[0]+'")';
     if (comment) {
     conf +=
-      '  # lighttpd '+form.serverVersion+' TLS default';
+      '  # lighttpd '+ctx.serverVersion+' TLS default';
     }
     conf +=
       '\n';
@@ -81,7 +90,7 @@ export default (form, output) => {
       'ssl.openssl.ssl-conf-cmd += ("Curves" => "'+output.tlsCurves.join(':')+'")';
    if (comment) {
     conf +=
-      '  # lighttpd '+form.serverVersion+' TLS default appends X448';
+      '  # lighttpd '+ctx.serverVersion+' TLS default appends X448';
    }
     conf +=
       '\n';
@@ -151,7 +160,7 @@ export default (form, output) => {
   }
 
     conf +=
-      '    # '+form.config+' configuration\n';
+      '    # '+ctx.config+' configuration\n';
   if (minver("1.4.48", form.serverVersion)) {
    if (minver("1.1.0", form.opensslVersion)) {
     conf +=

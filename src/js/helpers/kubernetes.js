@@ -61,6 +61,7 @@
 // — earlier kube-apiservers and kubelet (which has no HSTS surface at
 // any version) just silently drop the directive.
 import minver from './minver.js';
+import { safe } from './ctx.js';
 
 export default (form, output) => {
   // Whether the running kube-apiserver supports
@@ -75,6 +76,13 @@ export default (form, output) => {
   const minProto = output.protocols[0] === 'TLSv1'
     ? 'VersionTLS10'
     : output.protocols[0].replace('TLSv1.', 'VersionTLS1');
+
+  // Per-template context (see ./ctx.js): every form.* value spliced
+  // into the rendered config string is filtered through safe() as
+  // defence in depth.
+  const ctx = {
+    serverVersion: safe(form.serverVersion),
+  };
 
   // Header comment block. Names every directive emitted, cites the
   // upstream documentation, and explains the Go-runtime path for PQ.
@@ -107,7 +115,7 @@ export default (form, output) => {
        '#   default.\n';
     if (!minver('1.34.0', form.serverVersion)) {
       conf +=
-       '# WARNING: Kubernetes '+form.serverVersion+' was built with a Go\n'+
+       '# WARNING: Kubernetes '+ctx.serverVersion+' was built with a Go\n'+
        '#          release earlier than 1.24 and therefore will not\n'+
        '#          negotiate X25519MLKEM768 by default. Upgrade to\n'+
        '#          Kubernetes 1.34 or newer (Go 1.24+) to enable PQ\n'+
@@ -175,7 +183,7 @@ export default (form, output) => {
        '#\n'+
        '# HSTS: --strict-transport-security-directives requires\n'+
        '# kube-apiserver v1.28.0 or newer; the running version\n'+
-       '# ('+form.serverVersion+') is older and silently ignores the flag.\n'+
+       '# ('+ctx.serverVersion+') is older and silently ignores the flag.\n'+
        '# Front kube-apiserver with an HSTS-aware reverse proxy (nginx,\n'+
        '# HAProxy, Caddy, …) to add the response header on older clusters.\n';
     }

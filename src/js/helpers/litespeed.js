@@ -60,5 +60,6 @@ export default (form, output) => {
       '</virtualHostConfig>\n';
   }
 
-  return conf + pqOpensslCnfNote(form, output);
+  conf += pqOpensslCnfNote(form, output);
+  return conf;
 };

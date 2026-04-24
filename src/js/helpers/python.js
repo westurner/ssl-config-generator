@@ -1,4 +1,5 @@
 import minver from './minver.js';
+import { safe } from './ctx.js';
 
 // Python `ssl` module configuration template.
 //
@@ -57,11 +58,18 @@ export default (form, output) => {
   const fallbackCurve =
     output.tlsCurves.find(c => !/MLKEM/i.test(c)) || 'prime256v1';
 
+  // Per-template context (see ./ctx.js): every form.* value spliced
+  // into the rendered config string is filtered through safe() as
+  // defence in depth.
+  const ctx = {
+    config: safe(form.config),
+  };
+
   let conf =
       '# '+output.header+'\n'+
       '# '+output.link+'\n'+
       '#\n'+
-      '# Python `ssl` module configuration ('+form.config+' profile).\n'+
+      '# Python `ssl` module configuration ('+ctx.config+' profile).\n'+
       '#\n'+
       '# The Python `ssl` module is a thin wrapper around OpenSSL. The\n'+
       '# protocol-version floor, TLSv1.2 cipher list, and (on Python 3.13+)\n'+

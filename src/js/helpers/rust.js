@@ -15,10 +15,19 @@
 //  - rustls release notes:        https://github.com/rustls/rustls/releases
 //  - rustls PQ key exchange:      https://github.com/rustls/rustls/issues/1936
 //  - draft-kwiatkowski-tls-ecdhe-mlkem
+import { safe } from './ctx.js';
+
 export default (form, output) => {
   const protocols = output.protocols;
   const supportsTls12 = protocols.includes('TLSv1.2');
   const supportsTls13 = protocols.includes('TLSv1.3');
+
+  // Per-template context (see ./ctx.js): every form.* value spliced
+  // into the rendered config string is filtered through safe() as
+  // defence in depth.
+  const ctx = {
+    config: safe(form.config),
+  };
 
   let conf =
       '// '+output.header+'\n'+
@@ -55,7 +64,7 @@ export default (form, output) => {
       '}\n'+
       '\n'+
       'fn main() {\n'+
-      '    // '+form.config+' configuration\n'+
+      '    // '+ctx.config+' configuration\n'+
       '    let provider = Arc::new(default_provider());\n'+
       '    let versions: &[&\'static rustls::SupportedProtocolVersion] = &[\n';
 

@@ -34,5 +34,6 @@ export default (form, output) => {
       (!output.protocols.includes('TLSv1.2') ? 'no-tlsv1_2\n' : '');
  }
 
-  return conf + pqOpensslCnfNote(form, output);
+  conf += pqOpensslCnfNote(form, output);
+  return conf;
 };

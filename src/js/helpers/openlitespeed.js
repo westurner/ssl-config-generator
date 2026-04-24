@@ -54,5 +54,6 @@ export default (form, output) => {
       '}\n';
   }
 
-  return conf + pqOpensslCnfNote(form, output);
+  conf += pqOpensslCnfNote(form, output);
+  return conf;
 };

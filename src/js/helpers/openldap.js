@@ -1,4 +1,5 @@
 import minver from './minver.js';
+import { safe } from './ctx.js';
 
 // OpenLDAP (slapd) TLS configuration template.
 //
@@ -52,11 +53,18 @@ export default (form, output) => {
   const minProtocol = tlsProtocolMin(protocols[0] || 'TLSv1.2');
   const minProtocolLabel = protocols[0] || 'TLSv1.2';
 
+  // Per-template context (see ./ctx.js): every form.* value spliced
+  // into the rendered config string is filtered through safe() as
+  // defence in depth.
+  const ctx = {
+    config: safe(form.config),
+  };
+
   let conf =
       '# '+output.header+'\n'+
       '# '+output.link+'\n'+
       '#\n'+
-      '# OpenLDAP (slapd) TLS configuration ('+form.config+' profile).\n'+
+      '# OpenLDAP (slapd) TLS configuration ('+ctx.config+' profile).\n'+
       '#\n'+
       '# slapd.conf-style directives are shown below; the equivalent\n'+
       '# cn=config attributes (olcTLSCipherSuite, olcTLSProtocolMin,\n'+

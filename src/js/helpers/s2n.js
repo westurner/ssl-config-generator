@@ -1,4 +1,5 @@
 import minver from './minver.js';
+import { safe } from './ctx.js';
 
 // s2n-tls (https://github.com/aws/s2n-tls) C library template.
 //
@@ -65,6 +66,14 @@ export default (form, output) => {
     policy = PQ_POLICY;
   }
 
+  // Per-template context (see ./ctx.js): every form.* value spliced
+  // into the rendered C source string is filtered through safe() as
+  // defence in depth — the allow-list keeps the value safe inside both
+  // C `/* */` comments and C string literals.
+  const ctx = {
+    config: safe(form.config),
+  };
+
   let conf =
       '/* '+output.header+' */\n'+
       '/* '+output.link+' */\n'+
@@ -74,7 +83,7 @@ export default (form, output) => {
       ' *     cc your_app.c -ls2n -o your_app\n'+
       ' *\n'+
       ' * s2n-tls is configured via named security policies. The Mozilla\n'+
-      ' * "'+form.config+'" profile maps to the s2n "'+policy+'" policy.\n'+
+      ' * "'+ctx.config+'" profile maps to the s2n "'+policy+'" policy.\n'+
       ' * See https://github.com/aws/s2n-tls/blob/main/docs/usage-guide/topics/ch06-security-policies.md\n'+
       ' * for the full list of policies and the protocols / ciphersuites /\n'+
       ' * curves they enable.\n';
@@ -135,7 +144,7 @@ export default (form, output) => {
   if (suites.length > 0) {
     conf +=
       ' *\n'+
-      ' * For reference, the Mozilla "'+form.config+'" profile recommends the\n'+
+      ' * For reference, the Mozilla "'+ctx.config+'" profile recommends the\n'+
       ' * following ciphersuites (s2n selects a subset based on the policy):\n';
     for (const c of suites) {
       conf += ' *   - '+c+'\n';
@@ -174,7 +183,7 @@ export default (form, output) => {
       '        return EXIT_FAILURE;\n'+
       '    }\n'+
       '\n'+
-      '    /* Mozilla '+form.config+' profile -> s2n named security policy. */\n'+
+      '    /* Mozilla '+ctx.config+' profile -> s2n named security policy. */\n'+
       '    if (s2n_config_set_cipher_preferences(config, "'+policy+'") != S2N_SUCCESS) {\n'+
       '        fprintf(stderr, "set_cipher_preferences: %s\\n", s2n_strerror(s2n_errno, "EN"));\n'+
       '        s2n_config_free(config);\n'+
