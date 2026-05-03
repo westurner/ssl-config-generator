@@ -58,18 +58,111 @@ export default async function () {
 
   const url = new URL(document.location);
 
-  return pureState({
-    server,
-    serverVersion: form['version'].value,
-    opensslVersion: form['openssl'].value,
-    config: form['config'].value,
-    hsts: !!form['hsts'].checked,
-    ocsp: !!form['ocsp'].checked,
-    pqMode,
-    guideline: guideln,
-    guidelineData: sstls,
-    origin: url.origin,
-    pathname: url.pathname,
-    now: new Date(),
-  });
+  // generate the fragment
+  let fragment = `server=${server}&version=${form['version'].value}&config=${config}`;
+  fragment += configs[server].usesOpenssl !== false ? `&openssl=${form['openssl'].value}` : '';
+  fragment += configs[server].supportsHsts !== false && form['hsts'].checked ? '&hsts' : '';
+  fragment += supportsOcspStapling && form['ocsp'].checked ? '&ocsp' : '';
+  fragment += `&guideline=${guideln}`;
+
+  // generate the version tags
+  let version_tags = `${configs[server].name} ${form['version'].value}`;
+  if (configs[server].eolBefore
+      && !minver(configs[server].eolBefore, form['version'].value)) {
+    version_tags += ' (UNSUPPORTED; end-of-life)';
+  }
+  if (configs[server].usesOpenssl !== false) {
+    version_tags += `, OpenSSL ${form['openssl'].value}`;
+    if (!minver(configs['openssl'].eolBefore, form['openssl'].value)) {
+      version_tags += ' (UNSUPPORTED; end-of-life)';
+    }
+    else if (!minver("3.5.0", form['openssl'].value)
+             && minver("5.8", guideln)) {
+      version_tags += ' (OLD: missing PQC hybrid MLKEMs)';
+    }
+  }
+  version_tags += `, ${form['config'].value} config`;
+
+  // html-escape version_tags (even though version_tags is also used
+  // outside HTML contexts, HTML is not expected in version strings)
+  version_tags = xmlEntities(version_tags);
+
+  // generate the header
+  const date = new Date().toISOString().substr(0, 10);
+  let header = `generated ${date}, Mozilla Guideline v${guideln}, ${version_tags}`;
+  header += configs[server].supportsHsts !== false && form['hsts'].checked ? ', HSTS' : '';
+  header += supportsOcspStapling && form['ocsp'].checked ? ', OCSP' : '';
+
+  const link = `${url.origin}${url.pathname}#${fragment}`;
+
+  // we need to remove TLS 1.3 from the supported protocols if the software is too old
+  let protocols = ssc.tls_versions;
+  if (!configs[server].tls13
+      || !minver(configs[server].tls13, form['version'].value)
+      || !minver(configs['openssl'].tls13, form['openssl'].value)) {
+    protocols = protocols.filter(ciphers => ciphers !== 'TLSv1.3');
+  }
+  let tlsCurves = ssc.tls_curves;
+  if (!minver('3.5.0', form['openssl'].tls13)) {
+    // future: may need to filter 'X25519MLKEM768','SecP256r1MLKEM768','SecP384r1MLKEM1024'
+    tlsCurves = tlsCurves.filter(groups => groups !== 'X25519MLKEM768');
+  }
+
+  const cipherFormat = configs[server].cipherFormat ? configs[server].cipherFormat : 'openssl';
+  let ciphers = cipherFormat === 'go' ? ssc.ciphers['iana'] : ssc.ciphers[cipherFormat];
+  const supportedCiphers = configs[server].supportedCiphers
+    ? configs[server].supportedCiphers
+    : cipherFormat === 'go' ? configs['go'].supportedCiphers : null;
+  if (supportedCiphers) {
+    ciphers = ciphers.filter(suite => supportedCiphers.indexOf(suite) !== -1);
+  } else {
+    ciphers = ciphers;
+  }
+  if (ciphers.length && ciphers[0] === '@SECLEVEL=0') ciphers.shift();
+  if (configs[server].usesOpenssl !== false && minver('3.0.0', form['openssl'].value)) {
+    // set SECLEVEL=0 via cipher string to support TLSv1-1.1 "old" with OpenSSL 3.x
+    if (protocols.includes('TLSv1.1')) ciphers.unshift('@SECLEVEL=0');
+  }
+
+  const state = {
+    form: {
+      config: form['config'].value,
+      hsts: form['hsts'].checked && configs[server].supportsHsts !== false,
+      ocsp: form['ocsp'].checked && supportsOcspStapling,
+      opensslVersion: form['openssl'].value,
+      server,
+      serverName: configs[server].name,
+      serverVersion: form['version'].value,
+      version_tags,
+    },
+    output: {
+      ciphers,
+      cipherSuites: ssc.ciphersuites,
+      date,
+      dhCommand: `curl ${url.origin}/ffdhe${ssc.dh_param_size}.txt`,
+      dhParamSize: ssc.dh_param_size,
+      fragment,
+      hasVersions: configs[server].hasVersions !== false,
+      header,
+      hstsMaxAge: ssc.hsts_min_age,
+      //hstsRedirectCode: form['config'].value === 'old' ? 301 : 308,
+      hstsRedirectCode: 308,
+      latestVersion: configs[server].latestVersion,
+      link,
+      oldestClients: ssc.oldest_clients,
+      origin: url.origin,
+      protocols: protocols,
+      serverPreferredOrder: ssc.server_preferred_order,
+      showSupports: configs[server].showSupports !== false,
+      supportsHsts: configs[server].supportsHsts !== false,
+      supportsOcspStapling: supportsOcspStapling,
+      tlsCurves: tlsCurves,
+      // XXX: If DHE ciphers removed from guidelines, then usesDhe, dhCommand,
+      //      dhParamSize, and helpers/*.js code which uses them can be removed
+      usesDhe: ciphers.join(":").includes(":DHE") || ciphers.join(":").includes("_DHE_"), 
+      usesOpenssl: configs[server].usesOpenssl !== false,
+    },
+  };
+
+  return state;
 };
