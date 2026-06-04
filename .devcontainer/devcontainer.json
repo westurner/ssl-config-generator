@@ -1,0 +1,48 @@
+{
+  "name": "ssl-config-generator",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-20-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "browser-sync",
+      "onAutoForward": "notify"
+    }
+  },
+  "postCreateCommand": "npm ci",
+  "customizations": {
+    "vscode": {
+      // Only first-party / officially-published extensions
+      // (Microsoft, GitHub, Red Hat, EditorConfig, Prettier) are enabled by
+      // default. Third-party extensions are listed below but commented out;
+      // uncomment any you trust and want installed automatically.
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "EditorConfig.EditorConfig",
+        "redhat.vscode-yaml",
+        "DavidAnson.vscode-markdownlint",
+        "GitHub.vscode-pull-request-github",
+        "GitHub.vscode-github-actions",
+        "ms-azuretools.vscode-docker"
+        // ,"DigitalBrainstem.javascript-ejs-support"
+        // ,"syler.sass-indented"
+        // ,"tamasfe.even-better-toml"
+        // ,"yzhang.markdown-all-in-one"
+        // ,"eamodio.gitlens"
+        // ,"streetsidesoftware.code-spell-checker"
+        // ,"wmaurer.change-case"
+        // ,"Orta.vscode-jest"
+      ],
+      "settings": {
+        "editor.tabSize": 2,
+        "files.eol": "\n",
+        "files.insertFinalNewline": true,
+        "files.trimTrailingWhitespace": true
+      }
+    }
+  },
+  "remoteUser": "node"
+}

@@ -1,6 +1,15 @@
 import minver from './minver.js';
+import pqOpensslCnfNote from './pq-openssl-cnf-note.js';
+import { safe } from './ctx.js';
 
 export default (form, output) => {
+ // Per-template context: every form.* value spliced into the rendered
+ // config string is filtered through safe() (defence in depth — see
+ // ./ctx.js). Helpers MUST NOT splice form.* directly into a template.
+ const ctx = {
+   config: safe(form.config),
+ };
+
  var conf =
       '# '+output.header+'\n'+
       '# '+output.link+'\n'+
@@ -16,7 +25,7 @@ export default (form, output) => {
       'tls-ca-cert-file /path/to/ca_certificates.crt\n'+
       'tls-ca-cert-dir /path/to/ca_certificates\n'+
       '\n'+
-      '# '+form.config+' configuration\n'+
+      '# '+ctx.config+' configuration\n'+
       'tls-protocols "'+output.protocols.join(' ')+'"\n'+
       'tls-prefer-server-ciphers '+(output.serverPreferredOrder ? 'yes' : 'no')+'\n';
 
@@ -41,5 +50,8 @@ export default (form, output) => {
     conf = '';
  }
 
+  if (conf) {
+    conf += pqOpensslCnfNote(form, output);
+  }
   return conf;
 };

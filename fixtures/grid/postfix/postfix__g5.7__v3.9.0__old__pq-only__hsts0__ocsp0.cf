@@ -1,0 +1,23 @@
+# generated 1970-01-01, TLSRef Guideline v5.7, Postfix 3.9.0, OpenSSL 4.0.0, old config, PQ: only
+# https://ssl-config.mozilla.org/#server=postfix&version=3.9.0&config=old&openssl=4.0.0&guideline=5.7&hsts=false&ocsp=false&pq=only
+smtpd_tls_auth_only = yes
+smtpd_tls_chain_files =
+  /path/to/private_key,
+  /path/to/signed_cert_plus_intermediates
+smtpd_tls_security_level = may
+smtpd_tls_mandatory_protocols = >=TLSv1.3
+smtpd_tls_protocols           = >=TLSv1.3
+
+smtp_tls_security_level = may
+smtp_tls_mandatory_protocols  = >=TLSv1.3
+smtp_tls_protocols            = >=TLSv1.3
+
+tls_preempt_cipherlist = yes
+tls_eecdh_auto_curves = X25519MLKEM768
+tls_ffdhe_auto_groups =
+smtp_tls_mandatory_ciphers = medium
+smtpd_tls_mandatory_ciphers = medium
+tls_medium_cipherlist = @SECLEVEL=0:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES256-SHA256:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA
+
+# curl https://ssl-config.mozilla.org/ffdhe1024.txt > /path/to/dhparam
+smtpd_tls_dh1024_param_file = /path/to/dhparam

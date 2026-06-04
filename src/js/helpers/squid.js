@@ -1,4 +1,5 @@
 import minver from './minver.js';
+import pqOpensslCnfNote from './pq-openssl-cnf-note.js';
 
 export default (form, output) => {
  var minver_4 = minver("4", form.serverVersion);
@@ -50,5 +51,6 @@ export default (form, output) => {
       '  '+tlsprefix+'key=/path/to/private_key \\\n'+
       opts;
 
+  conf += pqOpensslCnfNote(form, output);
   return conf;
 };
