@@ -6,5 +6,5 @@ module.exports = {
   mobileHeader: "TLS Configurator",
   title: "TLS Configurator",
   url: "https://configurator.tlsref.org",
-  validHashKeys: ["server", "version", "server-version", "openssl", "openssl-version", "config", "hsts", "ocsp", "guideline"],
+  validHashKeys: ["server", "version", "server-version", "openssl", "openssl-version", "config", "hsts", "ocsp", "guideline", "pq"],
 };

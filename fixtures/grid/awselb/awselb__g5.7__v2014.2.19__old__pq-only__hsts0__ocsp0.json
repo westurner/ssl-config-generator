@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: TLSRef ELB configuration generated 1970-01-01, https://ssl-config.mozilla.org/#server=awselb&version=2014.2.19&config=old&guideline=5.7&hsts=false&ocsp=false&pq=only
+Parameters:
+  SSLCertificateId:
+    Description: The ARN of the ACM SSL certificate to use
+    Type: String
+    AllowedPattern: ^arn:aws:acm:[^:]*:[^:]*:certificate/.*$
+    ConstraintDescription: >
+      SSL Certificate ID must be a valid ACM ARN.
+      https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html#genref-arns
+Resources:
+  ExampleELB:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      Listeners:
+        - LoadBalancerPort: '443'
+          InstancePort: '80'
+          PolicyNames:
+            - TLSRef-old-v5-0
+          SSLCertificateId: !Ref SSLCertificateId
+          Protocol: HTTPS
+      AvailabilityZones:
+        Fn::GetAZs: !Ref 'AWS::Region'
+      Policies:
+        - PolicyName: TLSRef-old-v5-0
+          PolicyType: SSLNegotiationPolicyType
+          Attributes:
+            - Name: Protocol-TLSv1.3
+              Value: true
+            - Name: Server-Defined-Cipher-Order
+              Value: true
+            - Name: ECDHE-ECDSA-AES128-GCM-SHA256
+              Value: true
+            - Name: ECDHE-RSA-AES128-GCM-SHA256
+              Value: true
+            - Name: ECDHE-ECDSA-AES256-GCM-SHA384
+              Value: true
+            - Name: ECDHE-RSA-AES256-GCM-SHA384
+              Value: true
+            - Name: DHE-RSA-AES128-GCM-SHA256
+              Value: true
+            - Name: DHE-RSA-AES256-GCM-SHA384
+              Value: true
+            - Name: ECDHE-ECDSA-AES128-SHA256
+              Value: true
+            - Name: ECDHE-RSA-AES128-SHA256
+              Value: true
+            - Name: ECDHE-ECDSA-AES128-SHA
+              Value: true
+            - Name: ECDHE-RSA-AES128-SHA
+              Value: true
+            - Name: ECDHE-ECDSA-AES256-SHA384
+              Value: true
+            - Name: ECDHE-RSA-AES256-SHA384
+              Value: true
+            - Name: ECDHE-ECDSA-AES256-SHA
+              Value: true
+            - Name: ECDHE-RSA-AES256-SHA
+              Value: true
+            - Name: DHE-RSA-AES128-SHA256
+              Value: true
+            - Name: DHE-RSA-AES256-SHA256
+              Value: true
+            - Name: AES128-GCM-SHA256
+              Value: true
+            - Name: AES256-GCM-SHA384
+              Value: true
+            - Name: AES128-SHA256
+              Value: true
+            - Name: AES256-SHA256
+              Value: true
+            - Name: AES128-SHA
+              Value: true
+            - Name: AES256-SHA
+              Value: true
+            - Name: DES-CBC3-SHA
+              Value: true
+
+Outputs:
+  ELBURL:
+    Description: URL of the ELB load balancer
+    Value: !Join [ '', [ 'https://', !GetAtt 'ExampleELB.DNSName', '/' ] ]

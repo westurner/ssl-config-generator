@@ -1,0 +1,36 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: TLSRef ELB configuration generated 1970-01-01, https://ssl-config.mozilla.org/#server=awselb&version=2014.2.19&config=modern&guideline=6.0&hsts=false&ocsp=false&pq=only
+Parameters:
+  SSLCertificateId:
+    Description: The ARN of the ACM SSL certificate to use
+    Type: String
+    AllowedPattern: ^arn:aws:acm:[^:]*:[^:]*:certificate/.*$
+    ConstraintDescription: >
+      SSL Certificate ID must be a valid ACM ARN.
+      https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html#genref-arns
+Resources:
+  ExampleELB:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      Listeners:
+        - LoadBalancerPort: '443'
+          InstancePort: '80'
+          PolicyNames:
+            - TLSRef-modern-v5-0
+          SSLCertificateId: !Ref SSLCertificateId
+          Protocol: HTTPS
+      AvailabilityZones:
+        Fn::GetAZs: !Ref 'AWS::Region'
+      Policies:
+        - PolicyName: TLSRef-modern-v5-0
+          PolicyType: SSLNegotiationPolicyType
+          Attributes:
+            - Name: Protocol-TLSv1.3
+              Value: true
+            - Name: Server-Defined-Cipher-Order
+              Value: false
+
+Outputs:
+  ELBURL:
+    Description: URL of the ELB load balancer
+    Value: !Join [ '', [ 'https://', !GetAtt 'ExampleELB.DNSName', '/' ] ]

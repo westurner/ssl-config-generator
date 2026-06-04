@@ -7,7 +7,7 @@ import '../css/index.scss';
 import { validHashKeys } from './constants.js';
 import configs from './configs.js';
 import state from './state.js';
-import { sleep, xmlEntities } from './utils.js';
+import { sleep, xmlEntities, hashValueToBool } from './utils.js';
 
 
 // note if any button has changed so that we can update the fragment if it has
@@ -69,7 +69,10 @@ const render = async () => {
 
   // render the output header
   let header = `<h3>${_state.form.version_tags}</h3>\n`;
-  if (_state.output.showSupports) {
+  // showSupports defaults to "yes" when configs.js omits the flag, so
+  // treat null (omitted) and true the same. See render.js: omitted →
+  // output.showSupports is null; an explicit `false` opts out.
+  if (_state.output.showSupports !== false) {
     header += '<h6 id="output-clients">\n  Supports '+_state.output.oldestClients.join(', ')+'</h6>\n';
   }
   document.getElementById('output-header').innerHTML = header;
@@ -104,11 +107,6 @@ function form_config_init() {
       gHaveSettingsChanged = false;
       return;
     }
-
-    const mappings = {
-      'true': true,
-      'false': false,
-    };
 
     const params = new URLSearchParams(window.location.hash.substr(1));
 
@@ -157,7 +155,10 @@ function form_config_init() {
         switch (e.type) {
           case 'radio':
           case 'checkbox':
-            e.checked = entry[1] === undefined ? true : mappings[entry[1]] === undefined ? !!entry[1] : mappings[entry[1]];
+            // Accept both short flag-only fragments (`?hsts&ocsp` →
+            // value === '') and explicit boolean fragments
+            // (`?hsts=true&ocsp=false`). See utils.hashValueToBool.
+            e.checked = hashValueToBool(entry[1]);
             break;
           case 'text':
           case 'hidden':
@@ -216,6 +217,12 @@ function init_once() {
   document.getElementById('form-environment').addEventListener('change', async () => {
     form_change_event(false);
   });
+  const formPq = document.getElementById('form-pq');
+  if (formPq) {
+    formPq.addEventListener('change', async () => {
+      form_change_event(false);
+    });
+  }
   document.getElementById('form-server-1').addEventListener('change', async () => {
     form_change_event(true);
   });

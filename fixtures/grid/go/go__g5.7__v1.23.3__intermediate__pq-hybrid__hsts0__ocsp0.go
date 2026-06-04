@@ -1,0 +1,47 @@
+// generated 1970-01-01, TLSRef Guideline v5.7, Go 1.23.3, intermediate config, PQ: hybrid
+// https://ssl-config.mozilla.org/#server=go&version=1.23.3&config=intermediate&guideline=5.7&hsts=false&ocsp=false&pq=hybrid
+package main
+
+import (
+    "crypto/tls"
+    "log"
+    "net/http"
+)
+
+func main() {
+    mux := http.NewServeMux()
+    mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+        w.Write([]byte("This server is running the TLSRef intermediate configuration.\n"))
+    })
+
+    // Due to a lack of DHE support, you -must- use an ECDSA cert to support IE 11 on Windows 7
+    cfg := &tls.Config{
+        MinVersion: tls.VersionTLS12,
+        CurvePreferences: []tls.CurveID{
+            tls.X25519,               // Go 1.8+
+            tls.CurveP256,
+            tls.CurveP384,
+        },
+        CipherSuites: []uint16{
+            tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+            tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+            tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+            tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+            tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
+            tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+        },
+    }
+
+    srv := &http.Server{
+        Addr:      ":443",
+        Handler:   mux,
+        TLSConfig: cfg,
+        // Consider setting ReadTimeout, WriteTimeout, and IdleTimeout
+        // to prevent connections from taking resources indefinitely.
+    }
+
+    log.Fatal(srv.ListenAndServeTLS(
+        "/path/to/signed_cert_plus_intermediates",
+        "/path/to/private_key",
+    ))
+}
