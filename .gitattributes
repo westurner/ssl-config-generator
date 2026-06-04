@@ -1,0 +1,16 @@
+# Mark machine-generated artifacts so:
+#   * GitHub's PR diff view collapses them by default ("File suppressed
+#     by .gitattributes" / Linguist treats them as generated and excludes
+#     them from language stats).
+#   * Code-review automations (parallel_validation, CodeQL, etc.) that
+#     honour `linguist-generated` skip them when computing diffs — large
+#     auto-generated batches (e.g. an 871-file `npm run render-grid`
+#     refresh) don't time those tools out.
+#
+# These files are NOT third-party vendored code, they are produced by
+# scripts in this repo (`scripts/render-grid.js`, `scripts/screenshot.js`).
+# Edit the source helpers under src/js/helpers/ — never edit the
+# fixtures by hand.
+fixtures/grid/**         linguist-generated=true
+fixtures/grid/_index.json linguist-generated=true
+fixtures/screenshots/**  linguist-generated=true binary

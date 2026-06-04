@@ -1,20 +1,46 @@
 import minver from './minver.js';
+import { safe } from './ctx.js';
 
 // lighttpd TLS defaults are incrementally updated over time to improve security
 // and the lighttpd TLS defaults are widely supported by clients.  The output of
-// ssl-config-generator might explicitly lock configurations to specific details
+// TLS configurator might explicitly lock configurations to specific details
 // and might result in those configs continuing to be used for many, many years
 // without a security review.  Therefore, lighttpd TLS defaults should be
-// preferred when those defaults exceed the Mozilla ssl-config-generator
-// specification.  The logic below attempts to omit extra lines of configuration
-// when those extra lines match or are exceeded by the lighttpd TLS defaults.
+// preferred when those defaults exceed the TLSRef TLS guidelines.
+// The logic below attempts to omit extra lines of configuration when those
+// extra lines match or are exceeded by the lighttpd TLS defaults.
 
 export default (form, output) => {
+ // Per-template context (see ./ctx.js): every form.* value spliced into
+ // the rendered config string is filtered through safe() as defence in
+ // depth. Helpers MUST NOT splice form.* directly into a template.
+ const ctx = {
+   config: safe(form.config),
+   serverVersion: safe(form.serverVersion),
+ };
+
  var conf =
       '# '+output.header+'\n'+
       '# '+output.link+'\n'+
       '#server.port = 80\n'+
       '$SERVER["socket"] == "[::]:80" { }\n';
+
+ // Post-quantum hybrid groups (X25519MLKEM768, SecP256r1MLKEM768,
+ // SecP384r1MLKEM1024) are passed through to OpenSSL via
+ // ssl.openssl.ssl-conf-cmd ("Curves" => ...) below (lighttpd 1.4.50+
+ // with mod_openssl). The underlying OpenSSL must be 3.5.0+ to recognise
+ // those names natively; older OpenSSL needs the oqs-provider from
+ // liboqs. Surface the dependency so the operator does not silently lose
+ // the PQ key exchange they selected.
+ if (form.pq && form.pq !== 'none' && !minver("3.5.0", form.opensslVersion)) {
+    conf +=
+      '\n'+
+      '# WARNING: built-in ML-KEM hybrid groups (X25519MLKEM768,\n'+
+      '#          SecP256r1MLKEM768, SecP384r1MLKEM1024) require\n'+
+      '#          OpenSSL 3.5.0 or newer linked into mod_openssl.\n'+
+      '#          Earlier OpenSSL needs the "oqs-provider" from liboqs\n'+
+      '#          (loaded via openssl.cnf) to expose these groups.\n';
+ }
 
  if (minver("1.4.50", form.serverVersion)) {
 
@@ -45,7 +71,7 @@ export default (form, output) => {
       'ssl.openssl.ssl-conf-cmd = ("MinProtocol" => "'+output.protocols[0]+'")';
     if (comment) {
     conf +=
-      '  # lighttpd '+form.serverVersion+' TLS default';
+      '  # lighttpd '+ctx.serverVersion+' TLS default';
     }
     conf +=
       '\n';
@@ -64,7 +90,7 @@ export default (form, output) => {
       'ssl.openssl.ssl-conf-cmd += ("Curves" => "'+output.tlsCurves.join(':')+'")';
    if (comment) {
     conf +=
-      '  # lighttpd '+form.serverVersion+' TLS default appends X448';
+      '  # lighttpd '+ctx.serverVersion+' TLS default appends X448';
    }
     conf +=
       '\n';
@@ -79,7 +105,7 @@ export default (form, output) => {
       '\n'+
       '# lighttpd TLS defaults are widely supported by clients and should be preferred.\n'+
       '# See https://wiki.lighttpd.net/Docs_SSL\n'+
-      '# Uncomment to better match the less restricted Mozilla '+form.config+' spec.\n'+
+      '# Uncomment to better match the less restricted TLSRef '+ctx.config+' spec.\n'+
       '#ssl.openssl.ssl-conf-cmd += ("CipherString" => "'+output.ciphers.join(':')+'")\n'
        :
       '# TLS modules besides mod_openssl might name ciphers differently\n'+
@@ -134,7 +160,7 @@ export default (form, output) => {
   }
 
     conf +=
-      '    # '+form.config+' configuration\n';
+      '    # '+ctx.config+' configuration\n';
   if (minver("1.4.48", form.serverVersion)) {
    if (minver("1.1.0", form.opensslVersion)) {
     conf +=

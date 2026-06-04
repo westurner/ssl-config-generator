@@ -25,18 +25,18 @@ export default (form, output) => {
  }
 
     var sslpolicy = output.protocols.includes('TLSv1')
-      ? 'ELBSecurityPolicy-TLS-1-0-2015-04'
+      ? 'ELBSecurityPolicy-TLS13-1-0-PQ-2025-09'
       : output.protocols.includes('TLSv1.2')
-        ? 'ELBSecurityPolicy-TLS13-1-2-Res-2021-06'
-        : 'ELBSecurityPolicy-TLS13-1-3-2021-06';
+        ? 'ELBSecurityPolicy-TLS13-1-2-Res-PQ-2025-09'
+        : 'ELBSecurityPolicy-TLS13-1-3-PQ-2025-09';
 
     var conf =
 `# Please note that Application Load Balancers don't allow you to directly specify protocols
-# and ciphers, so this is the closest existing mapping from the Mozilla ${form.config}
+# and ciphers, so this is the closest existing mapping from the TLSRef ${form.config}
 # profile onto an existing Amazon SSL Security Policy. For additional information, please see:
 # https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html#describe-ssl-policies
 AWSTemplateFormatVersion: 2010-09-09
-Description: Mozilla ALB configuration generated ${output.date}, ${output.link}
+Description: TLSRef ALB configuration generated ${output.date}, ${output.link}
 Parameters:
   SSLCertificateId:
     Description: The ARN of the ACM SSL certificate to use
